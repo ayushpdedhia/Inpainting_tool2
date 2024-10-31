@@ -2,6 +2,7 @@
 import streamlit as st
 from PIL import Image
 import os
+import numpy as np
 
 from .components.ui_components import UIComponents
 from .components.canvas_handler import CanvasHandler

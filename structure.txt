@@ -1,0 +1,107 @@
+INPAINTING_TOOL2
+├── .venv
+├── data
+│   ├── processed
+│   ├── raw
+│   └── test_samples
+├── docs
+│   ├── api
+│   ├── examples
+│   └── guides
+├── notebooks
+│   ├── 1_mask_generation.ipynb
+│   ├── 2_model_training.ipynb
+│   ├── 3_evaluation.ipynb
+|
+├── requirements
+│   ├── base.txt
+│   ├── dev.txt
+│   ├── docs.txt
+│   ├── gpu.txt
+│   └── prod.txt
+├── scripts
+│   ├── weight_conversion
+│   │   ├── __pycache__
+│   │   ├── __init__.py
+│   │   ├── convert_weights.py
+│   │   ├── converter.py
+│   │   └── verify_weights.py
+│   ├── evaluate.py
+│   ├── setup.sh
+│   └── train.py
+├── src
+|   |── __init__.py
+│   ├── core
+│   │   ├── __init__.py
+│   │   └── model_manager.py
+│   ├── interface
+│   │   ├── components
+│   │   │   ├── __init__.py
+│   │   │   ├── canvas_handler.py
+│   │   │   └── ui_components.py
+│   │   ├── __init__.py
+│   │   └── app.py
+│   ├── models
+│   │   ├── other_models
+│   │   │   └── __init__.py
+│   │   ├── pconv
+│   │   │   ├── layers
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── partialconv2d.py
+│   │   │   ├── models
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── pconv_unet.py
+│   │   │   ├── __init__.py
+│   │   │   ├── loss.py
+│   │   │── utils
+│   │   │   ├── __init__.py
+│   │   │   ├── data_loader.py
+│   │   │   ├── image_processor.py
+│   │   │   └── mask_generator.py
+│── temp_weights
+│   ├── pconv_imagenet.h5
+│   └── pytorch_to_keras_vgg16.h5
+│── tests
+│   ├── __init__.py
+│   ├── test_mask_generator.py
+│   ├── test_model_manager.py
+│   └── test_pconv.py
+├── weights
+│   └── pconv
+│       ├── unet
+│       │   └── model_weights.pth
+│       └── vgg16
+│           ├── pdvgg16_bn_model_best.pth.tar
+│           └── vgg16_weights.pth
+├── .gitignore
+├── .python-version
+├── config.yaml
+├── README.md
+└── setup.py
+|── structure.txt
+
+
+Great! All verifications have passed successfully:
+
+Original H5 File: ✓
+
+Successfully verified the source H5 file structure
+All layers and weights present
+File size: 128571.11 KB
+
+
+UNet Weights: ✓
+
+Successfully converted and verified
+All encoder and decoder layers present
+All BatchNorm layers properly initialized
+File size: 128405.02 KB
+Number of layers: 76
+
+
+VGG Weights: ✓
+
+Successfully verified the NVIDIA VGG weights
+All expected layers present with correct module structure
+File size: 540552.17 KB
+Number of layers: 84

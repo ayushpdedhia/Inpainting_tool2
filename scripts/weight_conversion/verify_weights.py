@@ -27,11 +27,12 @@ class WeightVerifier:
             'dec4.0.weight', 'dec4.1.weight', 'dec4.1.bias',
         }
         
+        # Updated expected VGG layers to match module structure
         self.expected_vgg_layers = {
-            'features.0.weight', 'features.0.bias',
-            'features.2.weight', 'features.2.bias',
-            'features.5.weight', 'features.5.bias',
-            'features.7.weight', 'features.7.bias',
+            'features.module.0.weight', 'features.module.0.bias',
+            'features.module.3.weight', 'features.module.3.bias',
+            'features.module.7.weight', 'features.module.7.bias',
+            'features.module.10.weight', 'features.module.10.bias',
         }
 
     def verify_unet_weights(self):
