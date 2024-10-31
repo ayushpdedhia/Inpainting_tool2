@@ -1,0 +1,26 @@
+# Core ML Libraries (Minimum Required)
+torch==2.0.1
+torchvision==0.15.2
+tensorflow==2.13.0
+keras==2.13.1
+
+# Web Interface (Essential for UI)
+streamlit==1.25.0
+streamlit-drawable-canvas==0.9.2
+
+# Image Processing (Essential)
+Pillow>=9.5.0,<10.0.0  # Fixed version to resolve conflicts
+opencv-python==4.8.0.74
+numpy>=1.24.3,<1.25.0
+
+# Data Processing (Essential)
+pandas>=2.0.3,<2.1.0
+h5py>=3.9.0,<3.10.0
+
+# Progress & Visualization (Essential)
+tqdm>=4.65.0,<4.66.0
+matplotlib>=3.7.2,<3.8.0
+
+# Note: Use '>=' for flexibility in minor versions
+# This helps avoid dependency conflicts while
+# maintaining compatibility

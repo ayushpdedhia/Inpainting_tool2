@@ -1,0 +1,12 @@
+# Include base requirements
+-r base.txt
+
+# Production-specific packages
+gunicorn==21.2.0
+python-dotenv==1.0.0
+uvicorn==0.23.2
+streamlit-analytics==0.4.1
+
+# Monitoring and logging
+sentry-sdk==1.29.2
+prometheus-client==0.17.1

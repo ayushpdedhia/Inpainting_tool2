@@ -1,0 +1,24 @@
+# Include base requirements
+-r base.txt
+
+# Testing
+pytest==7.4.0
+pytest-cov==4.1.0
+pytest-mock==3.11.1
+
+# Code Quality
+black==23.7.0
+flake8==6.1.0
+isort==5.12.0
+mypy==1.4.1
+pre-commit==3.3.3
+
+# Debugging and Development
+ipython==8.14.0
+jupyter==1.0.0
+notebook==7.0.2
+ipdb==0.13.13
+
+# Type checking
+types-Pillow==10.0.0.1
+types-requests==2.31.0.2
