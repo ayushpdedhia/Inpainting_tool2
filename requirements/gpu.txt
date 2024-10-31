@@ -1,0 +1,42 @@
+# Include base requirements
+-r base.txt
+
+# CUDA toolkit dependencies
+nvidia-cuda-runtime-cu11==11.8.89
+nvidia-cuda-nvrtc-cu11==11.8.89
+nvidia-cuda-cupti-cu11==11.8.87
+nvidia-cudnn-cu11==8.7.0.84
+nvidia-cublas-cu11==11.11.3.6
+nvidia-cufft-cu11==10.9.0.58
+
+# GPU-enabled ML libraries
+torch-cuda==2.0.1
+tensorflow-gpu==2.13.0
+cupy-cuda11x==12.2.0
+
+# GPU monitoring and utilities
+gputil==1.4.0
+nvidia-ml-py==11.525.112
+pynvml==11.5.0
+
+# Optional GPU acceleration libraries
+numba==0.57.1
+jax[cuda11_pip]==0.4.14
+torch-scatter==2.1.1
+torch-sparse==0.6.17
+
+# Memory management
+pytorch-memlab==0.2.4
+gpustat==1.1.1
+
+# Note: Before installing these requirements:
+# 1. Ensure CUDA toolkit (11.x) is installed on your system
+# 2. Verify GPU compatibility
+# 3. Check available GPU memory
+# 4. Update versions based on your CUDA version
+#
+# Installation command:
+# pip install -r requirements/gpu.txt
+#
+# It's recommended to install these packages one by one
+# to better handle any compatibility issues
