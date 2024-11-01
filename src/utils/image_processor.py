@@ -91,6 +91,17 @@ class ImageProcessor:
             image = (image - self.config.mean) / self.config.std
             
         return image
+    
+    def normalize_vgg_tensor(self, tensor: torch.Tensor) -> torch.Tensor:
+        """Normalize tensor for VGG processing"""
+        # Ensure input is on correct device
+        device = tensor.device
+        
+        # ImageNet normalization for VGG
+        mean = torch.tensor(self.config.mean, device=device).view(1, 3, 1, 1)
+        std = torch.tensor(self.config.std, device=device).view(1, 3, 1, 1)
+        
+        return (tensor - mean) / std
 
     def postprocess(self, image: np.ndarray) -> Union[Image.Image, np.ndarray]:
         """

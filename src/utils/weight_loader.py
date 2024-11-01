@@ -22,13 +22,24 @@ class WeightLoader:
         import yaml
         with open(config_path, 'r') as f:
             return yaml.safe_load(f)
+        
+    def _log_checkpoint_info(self, checkpoint, path):
+        """Log useful information from checkpoint"""
+        if 'epoch' in checkpoint:
+            logger.info(f"Checkpoint from epoch: {checkpoint['epoch']}")
+        if 'best_prec1' in checkpoint:
+            logger.info(f"Best precision: {checkpoint['best_prec1']:.2f}")
+        if 'date' in checkpoint:
+            logger.info(f"Checkpoint date: {checkpoint['date']}")
+        logger.info(f"Checkpoint size: {os.path.getsize(path) / 1024:.2f} KB")
 
-    def load_model_weights(self, model):
+    def load_model_weights(self, model, load_vgg=True):
         """
         Load pretrained weights for PConv model
         
         Args:
             model: PConvUNet model instance
+            load_vgg: Whether to load VGG weights for loss computation
         Returns:
             model: Model with loaded weights
         """
@@ -56,6 +67,25 @@ class WeightLoader:
                 # Load weights
                 model.load_state_dict(new_state_dict, strict=False)
                 logger.info(f"Successfully loaded UNet weights from {unet_weights_path}")
+
+            # Load VGG weights if needed
+            if load_vgg and hasattr(model, 'vgg') and os.path.exists(vgg_weights_path):
+                vgg_checkpoint = torch.load(vgg_weights_path, map_location=self.device)
+                
+                if isinstance(vgg_checkpoint, OrderedDict):
+                    vgg_state_dict = vgg_checkpoint
+                else:
+                    vgg_state_dict = vgg_checkpoint.get('state_dict', vgg_checkpoint)
+                
+                # Clean up VGG state dict
+                vgg_new_state_dict = OrderedDict()
+                for k, v in vgg_state_dict.items():
+                    name = k.replace('module.', '')
+                    vgg_new_state_dict[name] = v
+                
+                # Load VGG weights
+                model.vgg.load_state_dict(vgg_new_state_dict, strict=False)
+                logger.info(f"Successfully loaded VGG weights from {vgg_weights_path}")
 
             # Move model to device
             model = model.to(self.device)
