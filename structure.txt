@@ -8,6 +8,12 @@ INPAINTING_TOOL2
 │   ├── api
 │   ├── examples
 │   └── guides
+|
+├── FOR_REFERNCE
+│   ├── inpainting_tool
+│   ├── partial convolution (pcon)
+│   ├── PConv-Keras-master 
+|
 ├── notebooks
 │   ├── 1_mask_generation.ipynb
 │   ├── 2_model_training.ipynb
@@ -53,11 +59,15 @@ INPAINTING_TOOL2
 │   │   │   │   └── pconv_unet.py
 │   │   │   ├── __init__.py
 │   │   │   ├── loss.py
+|   |   |   |── vgg_extractor.py
+|   |   |──__init__.py
+|   |   |  
 │   │   │── utils
-│   │   │   ├── __init__.py
-│   │   │   ├── data_loader.py
-│   │   │   ├── image_processor.py
-│   │   │   └── mask_generator.py
+│   │      ├── __init__.py
+│   │      ├── data_loader.py
+│   │      ├── image_processor.py
+│   │      └── mask_generator.py
+|   |
 │── temp_weights
 │   ├── pconv_imagenet.h5
 │   └── pytorch_to_keras_vgg16.h5
