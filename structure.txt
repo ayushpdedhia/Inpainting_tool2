@@ -4,6 +4,26 @@ INPAINTING_TOOL2
 │   ├── processed
 │   ├── raw
 │   └── test_samples
+│       ├── images
+│       │   ├── test_image_001.JPEG
+│       │   ├── test_image_002.JPEG
+│       │   ├── test_image_003.JPEG
+│       │   ├── test_image_004.JPEG
+│       │   ├── test_image_005.JPEG
+│       │   ├── val_image_001.JPEG
+│       │   ├── val_image_002.JPEG
+│       │   ├── val_image_003.JPEG
+│       │   ├── val_image_004.JPEG
+│       │   └── val_image_005.JPEG
+│       ├── masks
+│       │   ├── mask_corner.png
+│       │   ├── mask_edge.png
+│       │   ├── mask_large.png
+│       │   ├── mask_samll.png
+│       │   ├── mask_thick.png
+│       │   └── mask_thin.png
+│       └── test_samples_info.txt
+|
 ├── docs
 │   ├── api
 │   ├── examples
@@ -25,6 +45,7 @@ INPAINTING_TOOL2
 │   ├── docs.txt
 │   ├── gpu.txt
 │   └── prod.txt
+|
 ├── scripts
 │   ├── weight_conversion
 │   │   ├── __pycache__
@@ -32,14 +53,18 @@ INPAINTING_TOOL2
 │   │   ├── convert_weights.py
 │   │   ├── converter.py
 │   │   └── verify_weights.py
+|   |
 │   ├── evaluate.py
 │   ├── setup.sh
 │   └── train.py
+|
 ├── src
 |   |── __init__.py
+|   |
 │   ├── core
 │   │   ├── __init__.py
 │   │   └── model_manager.py
+|   |
 │   ├── interface
 │   │   ├── components
 │   │   │   ├── __init__.py
@@ -47,6 +72,7 @@ INPAINTING_TOOL2
 │   │   │   └── ui_components.py
 │   │   ├── __init__.py
 │   │   └── app.py
+|   |  
 │   ├── models
 │   │   ├── other_models
 │   │   │   └── __init__.py
@@ -61,16 +87,21 @@ INPAINTING_TOOL2
 │   │   │   ├── loss.py
 |   |   |   |── vgg_extractor.py
 |   |   |──__init__.py
-|   |   |  
-│   │   │── utils
-│   │      ├── __init__.py
-│   │      ├── data_loader.py
-│   │      ├── image_processor.py
-│   │      └── mask_generator.py
+|   |    
+|   |   
+│   │── utils
+│   │   ├── __init__.py
+│   │   ├── data_loader.py
+│   │   ├── image_processor.py
+│   │   ├── mask_generator.py
+│   │   ├── organize_test_data.py
+│   │   ├── rename_test_files.py
+│   │   └── weight_loader.py
 |   |
 │── temp_weights
 │   ├── pconv_imagenet.h5
 │   └── pytorch_to_keras_vgg16.h5
+|
 │── tests
 │   ├── __init__.py
 │   ├── test_mask_generator.py

@@ -1,0 +1,82 @@
+I have downloaded the entire dataset of Image Net which is of 200 GB
+E:\ayush\LY PROJECT\datasets\Image_net_datas\ILSVRC\Data\CLS-LOC
+
+The above folder contains three folders 
+test 
+train 
+val 
+
+test contains 100000 images in jpeg format 
+train contains 1000 folders and each folder contains about 1300 images 
+so total 1000 x 1300 = 1300000 images 
+val contains 50000 images 
+
+tell me which samples should I move to the directory 
+
+ALSO 
+the following folder contains 4 txt files 
+E:\ayush\LY PROJECT\datasets\Image_net_datas\ILSVRC\ImageSets\CLS-LOC
+named 
+test , train_cls , train_loc , val 
+
+some content of test is as follows 
+ILSVRC2012_test_00000001 1
+ILSVRC2012_test_00000002 2
+ILSVRC2012_test_00000003 3
+ILSVRC2012_test_00000004 4
+ILSVRC2012_test_00000005 5
+ILSVRC2012_test_00000006 6
+ILSVRC2012_test_00000007 7
+ILSVRC2012_test_00000008 8
+ILSVRC2012_test_00000009 9
+ILSVRC2012_test_00000010 10
+ILSVRC2012_test_00000011 11
+ILSVRC2012_test_00000012 12
+
+some content of train_cls is as follows 
+n01440764/n01440764_10026 1
+n01440764/n01440764_10027 2
+n01440764/n01440764_10029 3
+n01440764/n01440764_10040 4
+n01440764/n01440764_10042 5
+n01440764/n01440764_10043 6
+n01440764/n01440764_10048 7
+n01440764/n01440764_10066 8
+n01440764/n01440764_10074 9
+n01440764/n01440764_10095 10
+n01440764/n01440764_1009 11
+n01440764/n01440764_10108 12
+n01440764/n01440764_10110 13
+
+some content of train_loc is as follows 
+n01440764/n01440764_10040 1
+n01440764/n01440764_10048 2
+n01440764/n01440764_10074 3
+n01440764/n01440764_1009 4
+n01440764/n01440764_10108 5
+n01440764/n01440764_10251 6
+n01440764/n01440764_10293 7
+n01440764/n01440764_10323 8
+n01440764/n01440764_10342 9
+n01440764/n01440764_10361 10
+n01440764/n01440764_10365 11
+
+some content of val is as follows 
+ILSVRC2012_val_00000001 1
+ILSVRC2012_val_00000002 2
+ILSVRC2012_val_00000003 3
+ILSVRC2012_val_00000004 4
+ILSVRC2012_val_00000005 5
+ILSVRC2012_val_00000006 6
+ILSVRC2012_val_00000007 7
+ILSVRC2012_val_00000008 8
+ILSVRC2012_val_00000009 9
+ILSVRC2012_val_00000010 10
+
+there are also 3 csv files and 1 text file saved in the following directory 
+E:\ayush\LY PROJECT\datasets\Image_net_datas
+LOC_sample_submission.csv 
+LOC_sysnet_mapping.txt
+LOC_train_solution.csv
+LOC_val_solution
+
