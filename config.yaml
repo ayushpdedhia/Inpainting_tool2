@@ -1,1 +1,17 @@
-EMPTY
+model:
+  name: "pconv_unet"
+  weights_dir: "weights/pconv"
+  input_size: [512, 512]
+  device: "cuda"  # or "cpu"
+
+paths:
+  data_dir: "data"
+  weights_dir: "weights"
+  temp_weights: "temp_weights"
+  unet_weights: "weights/pconv/unet/model_weights.pth"
+  vgg_weights: "weights/pconv/vgg16/vgg16_weights.pth"
+
+interface:
+  canvas_size: 512
+  max_image_size: 1024
+  supported_formats: ["jpg", "jpeg", "png"]

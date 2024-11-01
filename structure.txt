@@ -87,7 +87,7 @@ INPAINTING_TOOL2
 ├── .python-version
 ├── config.yaml
 ├── README.md
-└── setup.py
+└── setup.sh
 |── structure.txt
 
 

@@ -8,6 +8,7 @@ from typing import Dict, Optional, Tuple, Any
 
 from ..models.pconv.loss import PConvLoss
 from ..models.pconv.models.pconv_unet import PConvUNet
+from ..utils.weight_loader import WeightLoader
 
 class ModelManager:
     def __init__(self):
