@@ -3,6 +3,11 @@ import sys
 from pathlib import Path
 import logging
 
+# Global variables
+TEST_DIR = Path(__file__).parent
+DATA_DIR = TEST_DIR.parent / 'data' / 'test_samples'
+logger = logging.getLogger(__name__)
+
 def setup_logging():
     """Setup logging configuration"""
     logging.basicConfig(
@@ -14,33 +19,40 @@ def setup_logging():
         ]
     )
 
+def verify_test_data():
+    """Verify test data integrity"""
+    required_files = {
+        'images': [f'test_image_{i:03d}.JPEG' for i in range(1, 6)],
+        'masks': ['mask_large.png', 'mask_edge.png', 'mask_thick.png',
+                 'mask_thin.png', 'mask_corner.png', 'mask_small.png']
+    }
+    
+    for category, files in required_files.items():
+        dir_path = DATA_DIR / category
+        for file in files:
+            if not (dir_path / file).exists():
+                logger.error(f"Missing required file: {category}/{file}")
+                return False
+    return True
+
 def run_tests():
     """Run all tests and generate report"""
-    # Setup logging
     setup_logging()
-    logger = logging.getLogger(__name__)
-    
-    # Get test directory
-    test_dir = Path(__file__).parent / 'tests'
     
     # Verify test data exists
-    data_dir = Path(__file__).parent / 'data' / 'test_samples'
-    if not data_dir.exists():
-        logger.error(f"Test data directory not found: {data_dir}")
+    if not DATA_DIR.exists():
+        logger.error(f"Test data directory not found: {DATA_DIR}")
         return 1
-        
-    required_dirs = ['images', 'masks']
-    for dir_name in required_dirs:
-        if not (data_dir / dir_name).exists():
-            logger.error(f"Required directory not found: {data_dir / dir_name}")
-            return 1
+    
+    if not verify_test_data():
+        logger.error("Test data verification failed")
+        return 1
     
     logger.info("Starting test run...")
     
     try:
-        # Run pytest with coverage
         args = [
-            str(test_dir),
+            str(TEST_DIR),
             '-v',
             '--cov=src',
             '--cov-report=html',

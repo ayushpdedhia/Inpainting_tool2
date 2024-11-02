@@ -104,9 +104,11 @@ INPAINTING_TOOL2
 |
 │── tests
 │   ├── __init__.py
+|   |── run_tests.py
 │   ├── test_mask_generator.py
 │   ├── test_model_manager.py
 │   └── test_pconv.py
+|
 ├── weights
 │   └── pconv
 │       ├── unet
@@ -114,6 +116,7 @@ INPAINTING_TOOL2
 │       └── vgg16
 │           ├── pdvgg16_bn_model_best.pth.tar
 │           └── vgg16_weights.pth
+|
 ├── .gitignore
 ├── .python-version
 ├── config.yaml
@@ -121,6 +124,13 @@ INPAINTING_TOOL2
 └── setup.sh
 |── structure.txt
 
+
+------------------------------------------------------------------------------------------------------------
+IMP NOTE ABOUT WEIGHT CONVERSION
+
+first run scripts/weight_conversion/convert_weights.py
+then run scripts/weight_conversion/verify_weights.py
+OUTPUT OF verify_weights.py 
 
 Great! All verifications have passed successfully:
 
@@ -146,3 +156,33 @@ Successfully verified the NVIDIA VGG weights
 All expected layers present with correct module structure
 File size: 540552.17 KB
 Number of layers: 84
+------------------------------------------------------------------------------------------------------------
+
+IMPORTANT NOTE ABOUT TESTS 
+
+For the first time, I recommend running the commands separately to ensure each step works correctly and to easily identify any issues:
+bash: chmod +x scripts/run_tests.sh
+
+Then run the test setup separately:
+bash: python -m src.utils.manage_test_data
+
+Check if this completes successfully
+Verify that test directories and files are organized correctly
+
+Finally, run the tests either using:
+./scripts/run_tests.sh
+OR 
+pytest tests/ -v --cov=src --cov-report=html --cov-report=term
+
+After you've verified everything works correctly, in the future you can just run:After you've verified everything works correctly, in the future you can just run:
+./scripts/run_tests.sh
+This step-by-step approach helps you:
+
+Verify the test environment setup is correct
+Identify any issues with data organization
+Ensure the tests themselves are running properly
+
+Once everything is working smoothly, you can use the shell script for all future test runs.
+Would you like to proceed with these steps? I can help you interpret any errors that might come up during the process.
+
+-----------------------------------------------------------------------------------------------------------

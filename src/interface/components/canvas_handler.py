@@ -13,19 +13,25 @@ class CanvasHandler:
         self.canvas_size = canvas_size
 
     def setup_canvas(self, image: Image.Image, stroke_width: int, drawing_mode: str) -> Dict:
-        """Setup the drawable canvas with the background image"""
-        return st_canvas(
-            fill_color="#FFFFFF",  # Solid white fill
-            stroke_width=stroke_width,
-            stroke_color="#FFFFFF",  # White stroke
-            background_color="#000000",
-            background_image=image,
-            drawing_mode=drawing_mode,
-            height=self.canvas_size,
-            width=self.canvas_size,
-            key="canvas",
-            display_toolbar=True
-        )
+        try:
+            resized_image = image.resize((self.canvas_size, self.canvas_size),
+                                Image.Resampling.LANCZOS)
+            return st_canvas(
+                fill_color="#FFFFFF",
+                stroke_width=stroke_width,
+                stroke_color="#FFFFFF",
+                background_color="#000000",
+                background_image=resized_image,  # Use resized_image here
+                drawing_mode=drawing_mode,
+                height=self.canvas_size,
+                width=self.canvas_size,
+                key="canvas",
+                display_toolbar=True
+            )
+        except Exception as e:
+            st.error(f"Error setting up canvas: {str(e)}")
+            return None
+        
 
     def process_canvas_result(self, canvas_result: Dict) -> Optional[np.ndarray]:
         """Process canvas result to generate mask"""

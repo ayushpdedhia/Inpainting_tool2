@@ -15,7 +15,8 @@ class InpaintingApp:
         self.canvas = CanvasHandler()
         self.image_processor = ImageProcessor()
         self.CANVAS_SIZE = 512
-
+    
+    @st.cache_resource
     def initialize_model(self) -> ModelManager:
         """Initialize the model manager with proper error handling"""
         try:
