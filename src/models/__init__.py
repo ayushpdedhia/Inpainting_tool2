@@ -126,7 +126,7 @@ class ModelRegistry:
 def register_all_models():
     """Register all available models"""
     from .pconv import PConvUNet
-    from .other_models import OtherInpaintingModels  # Import other models when available
+    #from .other_models import OtherInpaintingModels  # Import other models when available
     
     # Register PConv model
     ModelRegistry.register(
@@ -142,7 +142,7 @@ def register_all_models():
 __all__ = [
     'InpaintingModel',
     'ModelRegistry',
-    'register_all_models'
+    #'register_all_models'
 ]
 
 # Register all models when the package is imported

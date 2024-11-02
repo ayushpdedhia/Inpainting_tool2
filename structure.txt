@@ -93,6 +93,7 @@ INPAINTING_TOOL2
 │   │   ├── __init__.py
 │   │   ├── data_loader.py
 │   │   ├── image_processor.py
+|   |   ├── manage_test_data.py
 │   │   ├── mask_generator.py
 │   │   ├── organize_test_data.py
 │   │   ├── rename_test_files.py
@@ -160,29 +161,16 @@ Number of layers: 84
 
 IMPORTANT NOTE ABOUT TESTS 
 
-For the first time, I recommend running the commands separately to ensure each step works correctly and to easily identify any issues:
-bash: chmod +x scripts/run_tests.sh
+OPTION 1 (Recommended): Run the commands directly
 
-Then run the test setup separately:
-bash: python -m src.utils.manage_test_data
+# 1. First run the test setup
+python -m src.utils.manage_test_data
 
-Check if this completes successfully
-Verify that test directories and files are organized correctly
-
-Finally, run the tests either using:
-./scripts/run_tests.sh
-OR 
+# 2. Then run the tests
 pytest tests/ -v --cov=src --cov-report=html --cov-report=term
 
-After you've verified everything works correctly, in the future you can just run:After you've verified everything works correctly, in the future you can just run:
-./scripts/run_tests.sh
-This step-by-step approach helps you:
-
-Verify the test environment setup is correct
-Identify any issues with data organization
-Ensure the tests themselves are running properly
-
-Once everything is working smoothly, you can use the shell script for all future test runs.
-Would you like to proceed with these steps? I can help you interpret any errors that might come up during the process.
-
+OPTION 2: Create a Windows batch file instead
+Create a new file scripts/run_tests.bat: (Dont create if already created)
+Then you can run it using:
+.\scripts\run_tests.bat
 -----------------------------------------------------------------------------------------------------------

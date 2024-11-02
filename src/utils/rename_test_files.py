@@ -1,3 +1,4 @@
+# src/utils/rename_test_files.py
 import os
 import shutil
 from pathlib import Path
@@ -97,7 +98,15 @@ Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                 
             # Copy and rename file
             target_path = target_dir / new_name
-            shutil.copy2(orig_path, target_path)
+            
+            # Skip if source and target are the same file
+            if orig_path.resolve() == target_path.resolve():
+                print(f"Skipping {orig_path} as it's already in the correct location")
+                continue
+                
+            # Copy only if target doesn't exist or is different
+            if not target_path.exists() or orig_path.stat().st_size != target_path.stat().st_size:
+                shutil.copy2(orig_path, target_path)
             
     def run(self):
         """Execute the complete organization process"""

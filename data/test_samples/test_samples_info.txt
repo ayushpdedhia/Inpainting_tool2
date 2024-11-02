@@ -1,34 +1,24 @@
 MASKS:
 
-mask_large.png: Large contiguous region with small scattered holes
-mask_edge.png: Complex patterns near image edges
-mask_thick.png: Thick irregular patterns/broad strokes
-mask_thin.png: Thin scattered holes and lines
-mask_corner.png: Strong patterns at corners/edges
-mask_small.png: Small scattered irregular holes
+mask_large.png: Large contiguous region mask
+mask_edge.png: Edge pattern mask
+mask_thick.png: Thick pattern mask
+mask_thin.png: Thin scattered mask
+mask_corner.png: Corner pattern mask
+mask_small.png: Small scattered mask
 
 TEST IMAGES:
 
-test_image_001.jpg: Microscope/scientific grayscale image with fine structures
-test_image_002.jpg: Purple flower with water droplets, radial symmetry
-test_image_003.jpg: Sea cucumber with complex organic texture
-test_image_004.jpg: Magpie bird on fence, high contrast black/white
-test_image_005.jpg: Vintage TV against purple wall, geometric shapes
+test_image_001.JPEG: Microscope grayscale image
+test_image_002.JPEG: Purple flower with droplets
+test_image_003.JPEG: Sea cucumber texture
+test_image_004.JPEG: Magpie bird on fence
+test_image_005.JPEG: Vintage TV purple wall
 
 VALIDATION IMAGES:
 
-val_image_001.jpg: Sheltie/Collie dog with detailed fur texture
-val_image_002.jpg: Decorative bowl with soup, circular patterns
-val_image_003.jpg: Snake on textured road, curved shape
-val_image_004.jpg: Flying eagle against sky, motion details
-val_image_005.jpg: Military vehicle/tank with complex mechanical details
-
-Image Characteristics Coverage:
-
-Textures: fur, feathers, scales, mechanical, organic
-Patterns: geometric, organic, regular, irregular
-Colors: vibrant, monochrome, natural, artificial
-Details: fine to coarse
-Backgrounds: simple to complex
-Lighting: various conditions
-Subjects: animals, objects, nature, man-made
+val_image_001.JPEG: Sheltie dog portrait
+val_image_002.JPEG: Decorative bowl with soup
+val_image_003.JPEG: Snake on road
+val_image_004.JPEG: Flying eagle
+val_image_005.JPEG: Military vehicle

@@ -2,3 +2,8 @@
 weights
 temp_weights
 FOR_REFERNCE
+.coverage
+htmlcov/
+.pytest_cache/
+__pycache__/
+*.pyc
