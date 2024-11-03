@@ -121,9 +121,11 @@ INPAINTING_TOOL2
 ├── .gitignore
 ├── .python-version
 ├── config.yaml
+├── dataset.txt
+├── pytest.ini
 ├── README.md
-└── setup.sh
-|── structure.txt
+├── setup.sh
+└── structure.txt 
 
 
 ------------------------------------------------------------------------------------------------------------
