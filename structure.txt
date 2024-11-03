@@ -1,10 +1,14 @@
 INPAINTING_TOOL2
+├── .pytest_cache
 ├── .venv
 ├── data
 │   ├── processed
 │   ├── raw
 │   └── test_samples
+|       ├── documentation 
+|       |   ├── README.MD
 │       ├── images
+│       │   ├── README.MD
 │       │   ├── test_image_001.JPEG
 │       │   ├── test_image_002.JPEG
 │       │   ├── test_image_003.JPEG
@@ -21,7 +25,10 @@ INPAINTING_TOOL2
 │       │   ├── mask_large.png
 │       │   ├── mask_samll.png
 │       │   ├── mask_thick.png
-│       │   └── mask_thin.png
+│       │   |── mask_thin.png
+│       │   └── README.MD
+|       |
+|       |── file_mapping.json
 │       └── test_samples_info.txt
 |
 ├── docs
@@ -55,18 +62,22 @@ INPAINTING_TOOL2
 │   │   └── verify_weights.py
 |   |
 │   ├── evaluate.py
+│   ├── run_tests.bat
 │   ├── setup.sh
 │   └── train.py
 |
 ├── src
-|   |── __init__.py
+|   |── __pycache__
 |   |
 │   ├── core
+│   │   ├── __pycache__
 │   │   ├── __init__.py
 │   │   └── model_manager.py
 |   |
 │   ├── interface
+│   │   ├── __pycache__
 │   │   ├── components
+│   │   |   ├── __pycache__
 │   │   │   ├── __init__.py
 │   │   │   ├── canvas_handler.py
 │   │   │   └── ui_components.py
@@ -74,15 +85,21 @@ INPAINTING_TOOL2
 │   │   └── app.py
 |   |  
 │   ├── models
+│   │   ├── __pycache__
 │   │   ├── other_models
+│   │   |   ├── __pycache__
 │   │   │   └── __init__.py
 │   │   ├── pconv
+│   │   |   ├── __pycache__
 │   │   │   ├── layers
+│   │   |   |   ├── __pycache__
 │   │   │   │   ├── __init__.py
 │   │   │   │   └── partialconv2d.py
 │   │   │   ├── models
+│   │   |   |   ├── __pycache__
 │   │   │   │   ├── __init__.py
 │   │   │   │   └── pconv_unet.py
+|   |   |   |
 │   │   │   ├── __init__.py
 │   │   │   ├── loss.py
 |   |   |   |── vgg_extractor.py
@@ -90,6 +107,7 @@ INPAINTING_TOOL2
 |   |    
 |   |   
 │   │── utils
+│   │   |── __pycache__
 │   │   ├── __init__.py
 │   │   ├── data_loader.py
 │   │   ├── image_processor.py
@@ -99,11 +117,14 @@ INPAINTING_TOOL2
 │   │   ├── rename_test_files.py
 │   │   └── weight_loader.py
 |   |
+|   |── __init__.py
+|   |
 │── temp_weights
 │   ├── pconv_imagenet.h5
 │   └── pytorch_to_keras_vgg16.h5
 |
 │── tests
+│   |── __pycache__
 │   ├── __init__.py
 |   |── run_tests.py
 │   ├── test_mask_generator.py
@@ -176,3 +197,53 @@ Create a new file scripts/run_tests.bat: (Dont create if already created)
 Then you can run it using:
 .\scripts\run_tests.bat
 -----------------------------------------------------------------------------------------------------------
+
+The test execution order should be:
+1.Basic unit tests
+python -m pytest tests/test_mask_generator.py
+
+2.Model tests
+python -m pytest tests/test_pconv.py
+
+3.Integeration test 
+python -m pytest tests/test_model_manager.py
+
+4.Full test suite with coverage
+python -m pytest --cov=src --cov-report=html
+
+After running tests, check:
+--> The test results in the console
+--> Coverage report in htmlcov/index.html
+--> Any generated test outputs in data/test_samples/test_outputs/
+
+----------------------------------------------------------------------------------------------------------------
+PS D:\Inpainting_tool2> python -m pytest tests/test_mask_generator.py
+========================================================= test session starts =========================================================
+platform win32 -- Python 3.11.0, pytest-8.3.3, pluggy-1.5.0 -- D:\Inpainting_tool2\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Inpainting_tool2
+configfile: pytest.ini
+collected 14 items                                                                                                                     
+
+tests/test_mask_generator.py::TestMaskGenerator::test_initialization PASSED                                                      [  7%]
+tests/test_mask_generator.py::TestMaskGenerator::test_sample_generation PASSED                                                   [ 14%]
+tests/test_mask_generator.py::TestMaskGenerator::test_reproducibility PASSED                                                     [ 21%]
+tests/test_mask_generator.py::TestMaskGenerator::test_mask_properties[mask_large.png] PASSED                                     [ 28%]
+tests/test_mask_generator.py::TestMaskGenerator::test_mask_properties[mask_edge.png] PASSED                                      [ 35%]
+tests/test_mask_generator.py::TestMaskGenerator::test_mask_properties[mask_thick.png] PASSED                                     [ 42%]
+tests/test_mask_generator.py::TestMaskGenerator::test_mask_properties[mask_thin.png] PASSED                                      [ 50%]
+tests/test_mask_generator.py::TestMaskGenerator::test_mask_properties[mask_corner.png] PASSED                                    [ 57%]
+tests/test_mask_generator.py::TestMaskGenerator::test_mask_properties[mask_small.png] PASSED                                     [ 64%]
+tests/test_mask_generator.py::TestMaskGenerator::test_shape_generation PASSED                                                    [ 71%]
+tests/test_mask_generator.py::TestMaskGenerator::test_mask_variety PASSED                                                        [ 78%]
+tests/test_mask_generator.py::TestMaskGenerator::test_config_validation PASSED                                                   [ 85%]
+tests/test_mask_generator.py::TestMaskGenerator::test_mask_loading PASSED                                                        [ 92%]
+tests/test_mask_generator.py::TestMaskGenerator::test_error_handling PASSED                                                      [100%]
+
+========================================================== warnings summary ===========================================================
+.venv\Lib\site-packages\streamlit\elements\image.py:22
+  D:\Inpainting_tool2\.venv\Lib\site-packages\streamlit\elements\image.py:22: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13
+    import imghdr
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+----------------------------------------------------------------------------------------------------------------

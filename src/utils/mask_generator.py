@@ -48,6 +48,14 @@ class MaskGenerator:
             rand_seed: Optional random seed for reproducibility
             mask_dir: Optional directory with predefined masks
         """
+        # Input validation
+        if height <= 0 or width <= 0:
+            raise ValueError("Height and width must be positive")
+        if channels <= 0:
+            raise ValueError("Number of channels must be positive")
+        if mask_dir and not os.path.exists(mask_dir):
+            raise ValueError(f"Mask directory does not exist: {mask_dir}")
+        
         self.height = height
         self.width = width
         self.channels = channels
@@ -56,8 +64,12 @@ class MaskGenerator:
         
         # Set size scale based on image dimensions
         self.config.max_shape_size = self.config.max_shape_size or int((width + height) * 0.03)
+
+        # Validate configuration
+        self._validate_config()
         
-        # Set random seed if provided
+        # Initialize random number generator
+        self.rng = np.random.RandomState(rand_seed)
         if rand_seed is not None:
             random.seed(rand_seed)
             np.random.seed(rand_seed)
@@ -66,6 +78,21 @@ class MaskGenerator:
         self.mask_files = self._load_mask_files() if mask_dir else []
         if mask_dir:
             logger.info(f"Found {len(self.mask_files)} masks in {mask_dir}")
+
+    def _validate_config(self):
+        """Validate configuration parameters"""
+        # Validate shape parameters
+        if self.config.min_shape_size > self.config.max_shape_size:
+            raise ValueError("min_shape_size cannot be greater than max_shape_size")
+        if self.config.min_num_shapes > self.config.max_num_shapes:
+            raise ValueError("min_num_shapes cannot be greater than max_num_shapes")
+        if self.config.min_shape_size < 1:
+            raise ValueError("min_shape_size must be positive")
+            
+        # Validate probabilities
+        total_prob = sum(self.config.shape_probability.values())
+        if abs(total_prob - 1.0) > 1e-6:
+            raise ValueError("Shape probabilities must sum to 1.0")
 
     def sample(self, random_seed: Optional[int] = None) -> np.ndarray:
         """
@@ -78,27 +105,31 @@ class MaskGenerator:
             A binary mask array of shape (height, width, channels)
         """
         if random_seed is not None:
+            self.rng = np.random.RandomState(random_seed)
             random.seed(random_seed)
             np.random.seed(random_seed)
 
         if self.mask_files:
-            return self._load_random_mask()
+            mask = self._load_random_mask()
         else:
-            return self._generate_random_mask()
+            mask = self._generate_random_mask()
+        
+        return mask.squeeze()
+        
 
     def _generate_random_mask(self) -> np.ndarray:
         """Generate a random irregular mask using OpenCV"""
         mask = np.zeros((self.height, self.width, self.channels), np.uint8)
         
         # Generate random shapes
-        num_shapes = random.randint(self.config.min_num_shapes, self.config.max_num_shapes)
+        num_shapes = self.rng.randint(self.config.min_num_shapes, self.config.max_num_shapes + 1)
         
         for _ in range(num_shapes):
-            # Randomly select shape type based on probability distribution
-            shape_type = random.choices(
+            # Use rng for consistent random choices
+            shape_type = self.rng.choice(
                 list(self.config.shape_probability.keys()),
-                list(self.config.shape_probability.values())
-            )[0]
+                p=list(self.config.shape_probability.values())
+            )
             
             # Generate shape
             if shape_type == 'line':
@@ -112,23 +143,28 @@ class MaskGenerator:
 
     def _draw_random_line(self, mask: np.ndarray):
         """Draw a random line on the mask"""
-        x1, x2 = random.randint(1, self.width), random.randint(1, self.width)
-        y1, y2 = random.randint(1, self.height), random.randint(1, self.height)
-        thickness = random.randint(self.config.min_shape_size, self.config.max_shape_size)
+        x1 = self.rng.randint(1, self.width)
+        x2 = self.rng.randint(1, self.width)
+        y1 = self.rng.randint(1, self.height)
+        y2 = self.rng.randint(1, self.height)
+        thickness = self.rng.randint(self.config.min_shape_size, self.config.max_shape_size + 1)
         cv2.line(mask, (x1, y1), (x2, y2), (1,) * self.channels, thickness)
 
     def _draw_random_circle(self, mask: np.ndarray):
         """Draw a random circle on the mask"""
-        x1, y1 = random.randint(1, self.width), random.randint(1, self.height)
-        radius = random.randint(self.config.min_shape_size, self.config.max_shape_size)
+        x1 = self.rng.randint(1, self.width)
+        y1 = self.rng.randint(1, self.height)
+        radius = self.rng.randint(self.config.min_shape_size, self.config.max_shape_size + 1)
         cv2.circle(mask, (x1, y1), radius, (1,) * self.channels, -1)
 
     def _draw_random_ellipse(self, mask: np.ndarray):
         """Draw a random ellipse on the mask"""
-        x1, y1 = random.randint(1, self.width), random.randint(1, self.height)
-        s1, s2 = random.randint(1, self.width), random.randint(1, self.height)
-        a1, a2, a3 = [random.randint(3, 180) for _ in range(3)]
-        thickness = random.randint(self.config.min_shape_size, self.config.max_shape_size)
+        x1 = self.rng.randint(1, self.width)
+        y1 = self.rng.randint(1, self.height)
+        s1 = self.rng.randint(1, self.width)
+        s2 = self.rng.randint(1, self.height)
+        a1, a2, a3 = [self.rng.randint(3, 180) for _ in range(3)]
+        thickness = self.rng.randint(self.config.min_shape_size, self.config.max_shape_size + 1)
         cv2.ellipse(mask, (x1, y1), (s1, s2), a1, a2, a3, (1,) * self.channels, thickness)
 
     def _load_mask_files(self) -> List[str]:

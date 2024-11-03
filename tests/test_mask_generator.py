@@ -115,9 +115,11 @@ class TestMaskGenerator:
         """Test configuration validation"""
         # Test invalid shape probabilities
         invalid_config = MaskConfig(
-            shape_probability={'line': 0.5, 'circle': 0.2}  # Sum < 1
+            shape_probability={'line': 0.5, 'circle': 0.2, 'ellipse': 0.3}  # Sum = 1.0
         )
-        with pytest.raises(ValueError):
+        invalid_config.shape_probability = {'line': 0.5, 'circle': 0.2}  # Now sum < 1.0
+        
+        with pytest.raises(ValueError, match="Shape probabilities must sum to 1.0"):
             MaskGenerator(512, 512, config=invalid_config)
         
         # Test invalid size parameters
@@ -125,7 +127,15 @@ class TestMaskGenerator:
             min_shape_size=100,
             max_shape_size=50  # max < min
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="min_shape_size cannot be greater than max_shape_size"):
+            MaskGenerator(512, 512, config=invalid_config)
+        
+        # Test invalid shape numbers
+        invalid_config = MaskConfig(
+            min_num_shapes=20,
+            max_num_shapes=10  # max < min
+        )
+        with pytest.raises(ValueError, match="min_num_shapes cannot be greater than max_num_shapes"):
             MaskGenerator(512, 512, config=invalid_config)
     
     def test_mask_loading(self, test_data_dir):

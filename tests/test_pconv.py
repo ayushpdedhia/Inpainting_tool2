@@ -4,6 +4,9 @@ import numpy as np
 from src.models.pconv.layers.partialconv2d import PartialConv2d
 from src.models.pconv.loss import PConvLoss
 from src.models.pconv.vgg_extractor import VGG16FeatureExtractor
+import torch.nn as nn  # For nn.BatchNorm2d, nn.Upsample
+from src.models.pconv.models.pconv_unet import PConvUNet  # For PConvUNet model
+from src.models.pconv.vgg_extractor import VGG16FeatureExtractor, gram_matrix
 
 class TestPartialConv2d:
     @pytest.fixture
@@ -173,6 +176,34 @@ class TestPConvLoss:
         _, loss_dict = loss_function(output, target, mask)
         assert loss_dict['tv'] > 0
 
+    def test_loss_weights():
+        """Test loss weight scaling"""
+        custom_weights = {
+            'l1_weight': 2.0,
+            'hole_weight': 12.0,
+            'perceptual_weight': 0.1,
+            'style_weight': 240.0,
+            'tv_weight': 0.2
+        }
+        loss_fn = PConvLoss(**custom_weights)
+        # Test if weights are properly applied
+        output = torch.randn(1, 3, 64, 64)
+        target = torch.randn(1, 3, 64, 64)
+        mask = torch.ones(1, 1, 64, 64)
+        _, loss_dict = loss_fn(output, target, mask)
+        assert loss_dict['valid'] == custom_weights['l1_weight'] * loss_dict['valid']
+
+    def test_gradients():
+        """Test gradient computation"""
+        loss_fn = PConvLoss()
+        output = torch.randn(1, 3, 64, 64, requires_grad=True)
+        target = torch.randn(1, 3, 64, 64)
+        mask = torch.ones(1, 1, 64, 64)
+        
+        loss, _ = loss_fn(output, target, mask)
+        loss.backward()
+        assert output.grad is not None
+
 class TestVGGFeatureExtractor:
     @pytest.fixture
     def feature_extractor(self, device):
@@ -204,3 +235,128 @@ class TestVGGFeatureExtractor:
                          (256, 32, 32), (512, 16, 16)]
         for feat, (c, h, w) in zip(features, expected_sizes):
             assert feat.shape[1:] == (c, h, w)
+
+    def test_gram_matrix(self, device):
+        """Test Gram matrix computation"""
+        input_tensor = torch.randn(2, 3, 64, 64).to(device)
+        gram = gram_matrix(input_tensor)
+        assert gram.shape == (2, 3, 3)
+        # Test symmetry
+        assert torch.allclose(gram, gram.transpose(-2, -1))
+        # Test positive semi-definiteness
+        eigenvalues = torch.linalg.eigvalsh(gram[0])
+        assert torch.all(eigenvalues >= -1e-6)  # Allow for numerical error
+
+    def test_gram_matrix_batch(self, device):
+        """Test Gram matrix computation with different batch sizes"""
+        batch_sizes = [1, 2, 4]
+        for batch_size in batch_sizes:
+            input_tensor = torch.randn(batch_size, 3, 64, 64).to(device)
+            gram = gram_matrix(input_tensor)
+            assert gram.shape == (batch_size, 3, 3)
+
+    def test_gram_matrix_values(self, device):
+        """Test Gram matrix with known values"""
+        # Create a simple test case
+        input_tensor = torch.ones(1, 2, 2, 2).to(device)
+        input_tensor[0, 0] = torch.tensor([[1., 2.], [3., 4.]]).to(device)
+        input_tensor[0, 1] = torch.tensor([[5., 6.], [7., 8.]]).to(device)
+        
+        gram = gram_matrix(input_tensor)
+        
+        # Calculate expected result manually
+        expected_00 = 30.0 / 4  # (1²+2²+3²+4²)/4
+        expected_11 = 174.0 / 4  # (5²+6²+7²+8²)/4
+        expected_01 = 100.0 / 4  # (1*5+2*6+3*7+4*8)/4
+        
+        assert torch.allclose(gram[0, 0, 0], torch.tensor(expected_00).to(device), rtol=1e-4)
+        assert torch.allclose(gram[0, 1, 1], torch.tensor(expected_11).to(device), rtol=1e-4)
+        assert torch.allclose(gram[0, 0, 1], torch.tensor(expected_01).to(device), rtol=1e-4)
+        assert torch.allclose(gram[0, 1, 0], torch.tensor(expected_01).to(device), rtol=1e-4)
+
+    def test_layer_selection():
+        """Test layer selection behavior"""
+        extractor = VGG16FeatureExtractor(layer_num=2)
+        x = torch.randn(1, 3, 256, 256)
+        features = extractor(x)
+        assert len(features) == 2
+
+    def test_normalization():
+        """Test batch normalization"""
+        x = torch.rand(1, 3, 64, 64)
+        normalized = VGG16FeatureExtractor.normalize_batch(x)
+        assert normalized.shape == x.shape
+        # Check statistics
+        mean = normalized.mean((2, 3))
+        std = normalized.std((2, 3))
+        assert torch.allclose(mean, torch.zeros_like(mean), atol=1e-1)
+
+class TestPConvUNet:
+    @pytest.fixture
+    def model(self):
+        """Initialize PConv UNet model"""
+        return PConvUNet(input_channels=3)
+    
+    @pytest.fixture
+    def device(self):
+        return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+    def test_initialization(self, model):
+        """Test model initialization"""
+        assert isinstance(model, PConvUNet)
+        # Test encoder blocks
+        assert isinstance(model.enc1[0], PartialConv2d)
+        assert isinstance(model.enc1[1], nn.BatchNorm2d)
+        # Test decoder blocks
+        assert isinstance(model.dec1[0], PartialConv2d)
+        assert isinstance(model.dec1[1], nn.BatchNorm2d)
+    
+    def test_forward_pass(self, model, device):
+        """Test forward pass through entire network"""
+        model = model.to(device)
+        # Create sample input
+        x = torch.randn(1, 3, 256, 256).to(device)
+        mask = torch.ones(1, 1, 256, 256).to(device)
+        
+        output = model(x, mask)
+        assert output.shape == x.shape
+        assert not torch.isnan(output).any()
+    
+    def test_skip_connections(self, model, device):
+        """Test skip connections"""
+        model = model.to(device)
+        x = torch.randn(1, 3, 256, 256).to(device)
+        mask = torch.ones(1, 1, 256, 256).to(device)
+        
+        # Access intermediate features
+        with torch.no_grad():
+            enc1, m1 = model.enc1(x, mask)
+            assert enc1.shape == (1, 64, 128, 128)
+    
+    def test_mask_propagation(self, model, device):
+        """Test mask propagation through network"""
+        model = model.to(device)
+        x = torch.randn(1, 3, 256, 256).to(device)
+        mask = torch.ones(1, 1, 256, 256).to(device)
+        mask[:, :, 100:150, 100:150] = 0  # Create hole
+        
+        output = model(x, mask)
+        # Check if hole region has been modified
+        orig_hole = x[:, :, 100:150, 100:150]
+        new_hole = output[:, :, 100:150, 100:150]
+        assert not torch.allclose(orig_hole, new_hole)
+    
+    def test_upsampling(self, model, device):
+        """Test upsampling behavior"""
+        model = model.to(device)
+        x = torch.randn(1, 3, 256, 256).to(device)
+        mask = torch.ones(1, 1, 256, 256).to(device)
+        
+        # Test different upsampling modes
+        model.up = nn.Upsample(scale_factor=2, mode='nearest')
+        output_nearest = model(x, mask)
+        
+        model.up = nn.Upsample(scale_factor=2, mode='bilinear')
+        output_bilinear = model(x, mask)
+        
+        assert not torch.allclose(output_nearest, output_bilinear)
