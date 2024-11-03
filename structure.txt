@@ -148,7 +148,8 @@ INPAINTING_TOOL2
 ├── setup.sh
 └── structure.txt 
 
-
+goal of the model 
+The model should now generate plausible content for the masked areas while preserving the surrounding context.
 ------------------------------------------------------------------------------------------------------------
 IMP NOTE ABOUT WEIGHT CONVERSION
 

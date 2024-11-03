@@ -1,25 +1,15 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
 from torchvision import models
 
 def gram_matrix(input_tensor):
-    """
-    Compute Gram matrix efficiently
-    
-    Args:
-        input_tensor: Input tensor of shape (batch_size, channels, height, width)
-    Returns:
-        Gram matrix
-    """
+    """Compute Gram matrix exactly as defined in the style transfer paper"""
     b, ch, h, w = input_tensor.size()
     features = input_tensor.view(b, ch, h * w)
     features_t = features.transpose(1, 2)
-    
-    # Normalize by total elements in feature map
-    gram = torch.bmm(features, features_t) / (h * w)  # Changed normalization
-    return gram
+    gram = torch.bmm(features, features_t)
+    return gram  # Return raw gram matrix without normalization
 
 class VGG16FeatureExtractor(nn.Module):
     """VGG16 feature extraction with proper layer slicing"""
@@ -52,17 +42,20 @@ class VGG16FeatureExtractor(nn.Module):
             param.requires_grad = False
             
     @staticmethod
-    def normalize_batch(batch, div_factor=255.0):  # Changed default div_factor
-        """Normalize batch using ImageNet stats"""
-        # Normalize to [0,1] first
-        batch = batch / div_factor
-        
-        # Apply ImageNet normalization
-        mean = batch.new_tensor([0.485, 0.456, 0.406]).view(-1, 1, 1)
-        std = batch.new_tensor([0.229, 0.224, 0.225]).view(-1, 1, 1)
-        batch = (batch - mean) / std
-        return batch
+    def normalize_batch(batch, div_factor=255.0):
+        """Normalize batch for VGG processing"""
+        if batch.max() > 1.0:
+            batch = batch.float() / div_factor
 
+        # Remove standardization step
+        # Now apply ImageNet normalization
+        mean = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(batch.device)
+        std = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(batch.device)
+
+        return (batch - mean) / std
+
+
+    
     def forward(self, x):
         """Extract features layer by layer"""
         x = self.normalize_batch(x)

@@ -49,8 +49,21 @@ class PartialConv2d(nn.Conv2d):
         self.mask_ratio = None
 
     def forward(self, input, mask_in=None):
+        # Handle no-mask case first
+        if mask_in is None:
+            # Important: Return only convolution output for no-mask case
+            return super(PartialConv2d, self).forward(input)
+        
         assert len(input.shape) == 4
         
+        # Create mask if none provided
+        if mask_in is None:
+            mask = torch.ones(input.data.shape[0], 1, 
+                            input.data.shape[2], input.data.shape[3]).to(input)
+        else:
+            mask = mask_in
+            
+        # Update mask and compute mask ratio
         if mask_in is not None or self.last_size != tuple(input.shape):
             self.last_size = tuple(input.shape)
 
@@ -58,28 +71,19 @@ class PartialConv2d(nn.Conv2d):
                 if self.weight_maskUpdater.type() != input.type():
                     self.weight_maskUpdater = self.weight_maskUpdater.to(input)
 
-                if mask_in is None:
-                    # if mask is not provided, create a mask
-                    if self.multi_channel:
-                        mask = torch.ones(input.data.shape[0], input.data.shape[1], input.data.shape[2], input.data.shape[3]).to(input)
-                    else:
-                        mask = torch.ones(1, 1, input.data.shape[2], input.data.shape[3]).to(input)
-                else:
-                    mask = mask_in
+                self.update_mask = F.conv2d(mask, self.weight_maskUpdater, 
+                                        bias=None, stride=self.stride, 
+                                        padding=self.padding, dilation=self.dilation, 
+                                        groups=1)
 
-                 # Update mask (following paper's equation 2)        
-                self.update_mask = F.conv2d(mask, self.weight_maskUpdater, bias=None, stride=self.stride, padding=self.padding, dilation=self.dilation, groups=1)
-
-                # Mask ratio with epsilon for numerical stability
-                # for mixed precision training, change 1e-8 to 1e-6
                 self.mask_ratio = self.slide_winsize/(self.update_mask + 1e-8)
-                # self.mask_ratio = torch.max(self.update_mask)/(self.update_mask + 1e-8)
                 self.update_mask = torch.clamp(self.update_mask, 0, 1)
                 self.mask_ratio = torch.mul(self.mask_ratio, self.update_mask)
 
-        # Apply partial convolution (following paper's equation 1)
-        raw_out = super(PartialConv2d, self).forward(torch.mul(input, mask) if mask_in is not None else input)
+        # Apply convolution to masked input
+        raw_out = super(PartialConv2d, self).forward(torch.mul(input, mask))
 
+        # Apply bias if present
         if self.bias is not None:
             bias_view = self.bias.view(1, self.out_channels, 1, 1)
             output = torch.mul(raw_out - bias_view, self.mask_ratio) + bias_view
@@ -87,8 +91,10 @@ class PartialConv2d(nn.Conv2d):
         else:
             output = torch.mul(raw_out, self.mask_ratio)
 
-
+        # Return output with or without mask
         if self.return_mask:
+            if self.multi_channel:
+                self.update_mask = self.update_mask.mean(dim=1, keepdim=True)
             return output, self.update_mask
         else:
             return output
