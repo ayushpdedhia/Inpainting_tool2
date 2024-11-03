@@ -176,7 +176,7 @@ class TestPConvLoss:
         _, loss_dict = loss_function(output, target, mask)
         assert loss_dict['tv'] > 0
 
-    def test_loss_weights():
+    def test_loss_weights(self):
         """Test loss weight scaling"""
         custom_weights = {
             'l1_weight': 2.0,
@@ -193,7 +193,7 @@ class TestPConvLoss:
         _, loss_dict = loss_fn(output, target, mask)
         assert loss_dict['valid'] == custom_weights['l1_weight'] * loss_dict['valid']
 
-    def test_gradients():
+    def test_gradients(self):
         """Test gradient computation"""
         loss_fn = PConvLoss()
         output = torch.randn(1, 3, 64, 64, requires_grad=True)
@@ -274,14 +274,14 @@ class TestVGGFeatureExtractor:
         assert torch.allclose(gram[0, 0, 1], torch.tensor(expected_01).to(device), rtol=1e-4)
         assert torch.allclose(gram[0, 1, 0], torch.tensor(expected_01).to(device), rtol=1e-4)
 
-    def test_layer_selection():
+    def test_layer_selection(self):
         """Test layer selection behavior"""
         extractor = VGG16FeatureExtractor(layer_num=2)
         x = torch.randn(1, 3, 256, 256)
         features = extractor(x)
         assert len(features) == 2
 
-    def test_normalization():
+    def test_normalization(self):
         """Test batch normalization"""
         x = torch.rand(1, 3, 64, 64)
         normalized = VGG16FeatureExtractor.normalize_batch(x)

@@ -20,6 +20,9 @@ class PConvLoss(nn.Module):
                  feat_num=4,
                  device="cuda"):
         super().__init__()
+        
+        # Check if CUDA is available, if not use CPU
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.vgg = VGG16FeatureExtractor(layer_num=feat_num).to(device)
         self.l1_loss = nn.L1Loss()
         

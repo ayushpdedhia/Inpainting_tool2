@@ -13,38 +13,35 @@ from torch.autograd import Variable
 
 class PartialConv2d(nn.Conv2d):
     def __init__(self, *args, **kwargs):
-
-        # Extract custom arguments
-        self.multi_channel = kwargs.pop('multi_channel', False)
-        self.return_mask = kwargs.pop('return_mask', True)
-
-        super().__init__(*args, **kwargs)
-
-        # whether the mask is multi-channel or not
-        if 'multi_channel' in kwargs:
-            self.multi_channel = kwargs['multi_channel']
-            kwargs.pop('multi_channel')
-        else:
-            self.multi_channel = False  
-
-        if 'return_mask' in kwargs:
-            self.return_mask = kwargs['return_mask']
-            kwargs.pop('return_mask')
-        else:
-            self.return_mask = False
-
+        # Extract custom arguments before calling super()
+        multi_channel = kwargs.pop('multi_channel', False) if 'multi_channel' in kwargs else False
+        return_mask = kwargs.pop('return_mask', True) if 'return_mask' in kwargs else True
+        
+        # Call parent constructor
         super(PartialConv2d, self).__init__(*args, **kwargs)
-
+        
+        # Store the arguments as instance variables
+        self.multi_channel = multi_channel
+        self.return_mask = return_mask
+        
+        # Initialize weight_maskUpdater AFTER super() call
         if self.multi_channel:
-            self.weight_maskUpdater = torch.ones(self.out_channels, self.in_channels, self.kernel_size[0], self.kernel_size[1])
+            self.weight_maskUpdater = torch.ones(
+                self.out_channels, self.in_channels, 
+                self.kernel_size[0], self.kernel_size[1]
+            )
         else:
-            self.weight_maskUpdater = torch.ones(1, 1, self.kernel_size[0], self.kernel_size[1])
-
-         # Calculate the sliding window size (from paper's equation)    
-        self.slide_winsize = self.weight_maskUpdater.shape[1] * self.weight_maskUpdater.shape[2] * self.weight_maskUpdater.shape[3]
-
-        # Register buffers for optimization
-        self.register_buffer('weight_maskUpdater', self.weight_maskUpdater, persistent=False)
+            self.weight_maskUpdater = torch.ones(
+                1, 1, self.kernel_size[0], self.kernel_size[1]
+            )
+        
+        # Calculate the sliding window size
+        self.slide_winsize = (self.weight_maskUpdater.shape[1] * 
+                            self.weight_maskUpdater.shape[2] * 
+                            self.weight_maskUpdater.shape[3])
+        
+        # Register buffer for optimization (changed name to avoid conflict)
+        self.register_buffer('weight_mask_updater', self.weight_maskUpdater)
         
         # Initialize other attributes
         self.last_size = (None, None, None, None)

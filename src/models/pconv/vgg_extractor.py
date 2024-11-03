@@ -2,28 +2,23 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from torchvision import models  # Added this import
+from torchvision import models
 
 def gram_matrix(input_tensor):
     """
-    Compute Gram matrix efficiently using baddbmm
+    Compute Gram matrix efficiently
     
     Args:
         input_tensor: Input tensor of shape (batch_size, channels, height, width)
     Returns:
         Gram matrix
     """
-    (b, ch, h, w) = input_tensor.size()
-    features = input_tensor.view(b, ch, w * h)
+    b, ch, h, w = input_tensor.size()
+    features = input_tensor.view(b, ch, h * w)
     features_t = features.transpose(1, 2)
     
-    # More efficient computation using baddbmm
-    gram = torch.zeros(b, ch, ch).type(features.type())
-    gram = torch.baddbmm(
-        gram, features, features_t,
-        beta=0,
-        alpha=1. / (ch * h * w)
-    )
+    # Normalize by total elements in feature map
+    gram = torch.bmm(features, features_t) / (h * w)  # Changed normalization
     return gram
 
 class VGG16FeatureExtractor(nn.Module):
@@ -57,28 +52,31 @@ class VGG16FeatureExtractor(nn.Module):
             param.requires_grad = False
             
     @staticmethod
-    def normalize_batch(batch, div_factor=1.0):
+    def normalize_batch(batch, div_factor=255.0):  # Changed default div_factor
         """Normalize batch using ImageNet stats"""
+        # Normalize to [0,1] first
+        batch = batch / div_factor
+        
+        # Apply ImageNet normalization
         mean = batch.new_tensor([0.485, 0.456, 0.406]).view(-1, 1, 1)
         std = batch.new_tensor([0.229, 0.224, 0.225]).view(-1, 1, 1)
-        batch = batch / div_factor
         batch = (batch - mean) / std
         return batch
 
     def forward(self, x):
         """Extract features layer by layer"""
         x = self.normalize_batch(x)
-        h = self.slice1(x)
-        h1 = h
-        h = self.slice2(h)
-        h2 = h
-        h = self.slice3(h)
-        h3 = h
-        h = self.slice4(h)
-        h4 = h
+        
+        # Get features from each slice
+        h1 = self.slice1(x)
+        h2 = self.slice2(h1)
+        h3 = self.slice3(h2)
+        h4 = self.slice4(h3)
+        
+        # Return only requested number of layers
         outputs = []
-        if self.layer_num >= 1: outputs.append(h1)
-        if self.layer_num >= 2: outputs.append(h2)
-        if self.layer_num >= 3: outputs.append(h3)
-        if self.layer_num >= 4: outputs.append(h4)
+        layers = [h1, h2, h3, h4]
+        for i in range(min(self.layer_num, 4)):
+            outputs.append(layers[i])
+            
         return outputs
