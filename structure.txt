@@ -127,9 +127,13 @@ INPAINTING_TOOL2
 │   |── __pycache__
 │   ├── __init__.py
 |   |── run_tests.py
+│   ├── test_config.py
+│   ├── test_data_loader.py
+│   ├── test_image_processor.py
 │   ├── test_mask_generator.py
 │   ├── test_model_manager.py
-│   └── test_pconv.py
+│   ├── test_pconv.py
+│   └── test_weight_loader.py 
 |
 ├── weights
 │   └── pconv
@@ -150,7 +154,7 @@ INPAINTING_TOOL2
 
 goal of the model 
 The model should now generate plausible content for the masked areas while preserving the surrounding context.
-------------------------------------------------------------------------------------------------------------
+-----------------------------------------xx-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 IMP NOTE ABOUT WEIGHT CONVERSION
 
 first run scripts/weight_conversion/convert_weights.py
@@ -181,7 +185,7 @@ Successfully verified the NVIDIA VGG weights
 All expected layers present with correct module structure
 File size: 540552.17 KB
 Number of layers: 84
-------------------------------------------------------------------------------------------------------------
+------------------------------------------------xx----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 IMPORTANT NOTE ABOUT TESTS 
 
@@ -197,7 +201,7 @@ OPTION 2: Create a Windows batch file instead
 Create a new file scripts/run_tests.bat: (Dont create if already created)
 Then you can run it using:
 .\scripts\run_tests.bat
------------------------------------------------------------------------------------------------------------
+--------------------------------------------------xx-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 The test execution order should be:
 1.Basic unit tests
@@ -217,7 +221,7 @@ After running tests, check:
 --> Coverage report in htmlcov/index.html
 --> Any generated test outputs in data/test_samples/test_outputs/
 
-----------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------xx----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 PS D:\Inpainting_tool2> python -m pytest tests/test_mask_generator.py
 ========================================================= test session starts =========================================================
 platform win32 -- Python 3.11.0, pytest-8.3.3, pluggy-1.5.0 -- D:\Inpainting_tool2\.venv\Scripts\python.exe
@@ -248,7 +252,7 @@ tests/test_mask_generator.py::TestMaskGenerator::test_error_handling PASSED     
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 =================================================================================== 14 passed, 1 warning in 3.42s ====================================================================================
-----------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------xx-------------------------------------------------------------------------------------------------------------------------------------------
 
 
 =================================================================== test session starts =================================================================== 
@@ -290,6 +294,8 @@ tests/test_pconv.py::TestPConvUNet::test_upsampling PASSED                      
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 ============================================================= 24 passed, 1 warning in 16.93s ============================================================== 
+
+----------------------------------------------------------------------------------------------------------------xx----------------------------------------------------------------------------------------------------------------
 
 I'll explain the significance of each group of tests and what their passing means for your image inpainting project:
 
@@ -381,4 +387,113 @@ Proper handling of masked regions
 This comprehensive test coverage gives confidence that your implementation meets the project's goal of "generating plausible content for the masked areas while preserving the surrounding context" using partial convolutions.
 
 
-----------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------xx-----------------------------------------------------------------------------------------------------------------------------------------------------
+
+Based on your codebase structure and dependencies between components, here's the recommended order for running the tests:
+
+1. First Level (Basic Components & Configuration):
+```bash
+pytest tests/test_config.py Command: python -m pytest tests/test_config.py   
+pytest tests/test_mask_generator.py
+```
+These tests verify the basic configuration and mask generation functionality that other components depend on.
+
+2. Second Level (Core Utilities):
+```bash
+pytest tests/test_image_processor.py
+pytest tests/test_weight_loader.py
+```
+These test the utility classes that handle image processing and weight loading, which are used by higher-level components.
+
+3. Third Level (Data Management):
+```bash
+pytest tests/test_data_loader.py
+```
+This tests the data loading functionality that depends on both image processing and configuration.
+
+4. Fourth Level (Model Components):
+```bash
+pytest tests/test_pconv.py
+```
+This tests the core PConv model implementation.
+
+5. Final Level (Integration):
+```bash
+pytest tests/test_model_manager.py
+```
+This tests the model manager which integrates all the previous components.
+
+You can run all tests at once using:
+```bash
+pytest tests/ -v
+```
+
+The reason for this order is:
+1. `config.py` and `mask_generator.py` are base components with minimal dependencies
+2. `image_processor.py` and `weight_loader.py` depend on configuration
+3. `data_loader.py` depends on image processing and mask generation
+4. `test_pconv.py` depends on weight loading and basic utilities
+5. `test_model_manager.py` depends on all other components
+
+This order ensures that if there's a failure, you can quickly identify which layer of your application has issues. 
+------------------------------------------------------------------------------------xx--------------------------------------------------------------------------------------------------------------------------------------------
+PS D:\Inpainting_tool2> python -m pytest tests/test_config.py        
+========================================================================= test session starts =========================================================================
+platform win32 -- Python 3.11.0, pytest-8.3.3, pluggy-1.5.0 -- D:\Inpainting_tool2\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Inpainting_tool2
+configfile: pytest.ini
+collected 14 items                                                                                                                                                     
+
+tests/test_config.py::TestConfiguration::test_valid_config_loading PASSED                                                                                        [  7%]
+tests/test_config.py::TestConfiguration::test_model_configuration PASSED                                                                                         [ 14%]
+tests/test_config.py::TestConfiguration::test_missing_required_fields PASSED                                                                                     [ 21%]
+tests/test_config.py::TestConfiguration::test_invalid_model_name PASSED                                                                                          [ 28%]
+tests/test_config.py::TestConfiguration::test_path_validation PASSED                                                                                             [ 35%]
+tests/test_config.py::TestConfiguration::test_interface_configuration PASSED                                                                                     [ 42%]
+tests/test_config.py::TestConfiguration::test_invalid_device_configuration PASSED                                                                                [ 50%]
+tests/test_config.py::TestConfiguration::test_invalid_input_size PASSED                                                                                          [ 57%]
+tests/test_config.py::TestConfiguration::test_supported_formats_validation PASSED                                                                                [ 64%]
+tests/test_config.py::TestConfiguration::test_weight_paths_validation PASSED                                                                                     [ 71%] 
+tests/test_config.py::TestConfiguration::test_config_type_validation PASSED                                                                                      [ 78%]
+tests/test_config.py::TestConfiguration::test_environment_specific_config PASSED                                                                                 [ 85%] 
+tests/test_config.py::TestConfiguration::test_config_file_permissions PASSED                                                                                     [ 92%]
+tests/test_config.py::TestConfiguration::test_malformed_yaml PASSED                                                                                              [100%] 
+
+========================================================================= 14 passed in 1.93s ==========================================================================
+----------------------------------------------------------------------------------------------------------------xx----------------------------------------------------------------------------------------------------------------
+
+PS D:\Inpainting_tool2> python -m pytest tests/test_image_processor.py
+========================================================================= test session starts =========================================================================
+platform win32 -- Python 3.11.0, pytest-8.3.3, pluggy-1.5.0 -- D:\Inpainting_tool2\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Inpainting_tool2
+configfile: pytest.ini
+collected 15 items                                                                                                                                                     
+
+tests/test_image_processor.py::TestImageProcessor::test_processing_config_initialization PASSED                                                                  [  6%] 
+tests/test_image_processor.py::TestImageProcessor::test_processor_initialization PASSED                                                                          [ 13%] 
+tests/test_image_processor.py::TestImageProcessor::test_preprocess_pil_image PASSED                                                                              [ 20%]
+tests/test_image_processor.py::TestImageProcessor::test_preprocess_numpy_array PASSED                                                                            [ 26%]
+tests/test_image_processor.py::TestImageProcessor::test_custom_target_size PASSED                                                                                [ 33%] 
+tests/test_image_processor.py::TestImageProcessor::test_image_normalization PASSED                                                                               [ 40%]
+tests/test_image_processor.py::TestImageProcessor::test_mask_binarization PASSED                                                                                 [ 46%]
+tests/test_image_processor.py::TestImageProcessor::test_vgg_normalization PASSED                                                                                 [ 53%] 
+tests/test_image_processor.py::TestImageProcessor::test_postprocess PASSED                                                                                       [ 60%]
+tests/test_image_processor.py::TestImageProcessor::test_tensor_conversion PASSED                                                                                 [ 66%] 
+tests/test_image_processor.py::TestImageProcessor::test_error_handling PASSED                                                                                    [ 73%] 
+tests/test_image_processor.py::TestImageProcessor::test_resize_consistency PASSED                                                                                [ 80%]
+tests/test_image_processor.py::TestImageProcessor::test_batch_handling PASSED                                                                                    [ 86%]
+tests/test_image_processor.py::TestImageProcessor::test_edge_cases PASSED                                                                                        [ 93%]
+tests/test_image_processor.py::TestImageProcessor::test_memory_efficiency PASSED                                                                                 [100%]
+
+========================================================================== warnings summary =========================================================================== 
+.venv\Lib\site-packages\streamlit\elements\image.py:22
+  D:\Inpainting_tool2\.venv\Lib\site-packages\streamlit\elements\image.py:22: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13
+    import imghdr
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+==================================================================== 15 passed, 1 warning in 3.52s ====================================================================
+
+----------------------------------------------------------------------------------------------------------------xx----------------------------------------------------------------------------------------------------------------
+

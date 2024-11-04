@@ -111,15 +111,20 @@ class TestImageProcessor:
         assert processed_mask.shape[-2:] == custom_size
 
     def test_image_normalization(self, processor, test_image):
-        """Test image normalization"""
         processed_image, _ = processor.preprocess(test_image, np.zeros_like(test_image[:,:,0]))
         
         # Check value range
         assert np.all(processed_image >= -5) and np.all(processed_image <= 5)
         
         # Test if normalization with ImageNet stats was applied
-        original_mean = np.mean(test_image, axis=(0, 1)) / 255.0
-        processed_mean = np.mean(processed_image[0], axis=(0, 1))
+        original_mean = np.mean(test_image, axis=(0, 1)) / 255.0  # Shape: (3,)
+        
+        # Get the processed mean, ensuring we're comparing the same shapes
+        processed = processed_image[0]  # Remove batch dimension
+        processed_mean = np.mean(processed, axis=(1, 2))  # Take mean across H,W dimensions
+        
+        # Now both means should be shape (3,)
+        assert processed_mean.shape == original_mean.shape
         assert not np.allclose(original_mean, processed_mean)
 
     def test_mask_binarization(self, processor, test_mask):
