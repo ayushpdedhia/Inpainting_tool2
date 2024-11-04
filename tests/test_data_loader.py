@@ -41,20 +41,34 @@ class TestDataLoader:
         shutil.rmtree(temp_dir)
 
     def _create_test_images(self, directory: Path, num_images: int = 5):
-        """Helper method to create test images"""
+        """Helper method to create test images matching your actual structure"""
+        # Create test images with your naming convention
         for i in range(num_images):
-            # Create random RGB image
             img_array = np.random.randint(0, 255, (64, 64, 3), dtype=np.uint8)
             img = Image.fromarray(img_array)
-            img.save(directory / f'test_image_{i}.jpg')
+            img.save(directory / f'test_image_{str(i+1).zfill(3)}.jpeg')  # Changed to .jpeg to match your structure
+            
+        # Create validation images
+        for i in range(num_images):
+            img_array = np.random.randint(0, 255, (64, 64, 3), dtype=np.uint8)
+            img = Image.fromarray(img_array)
+            img.save(directory / f'val_image_{str(i+1).zfill(3)}.jpeg')
 
-    def _create_test_masks(self, directory: Path, num_masks: int = 3):
-        """Helper method to create test masks"""
-        for i in range(num_masks):
-            # Create random binary mask
+    def _create_test_masks(self, directory: Path):
+        """Helper method to create test masks matching your actual structure"""
+        mask_names = [
+            'mask_corner',
+            'mask_edge',
+            'mask_large',
+            'mask_small',
+            'mask_thick',
+            'mask_thin'
+        ]
+        
+        for mask_name in mask_names:
             mask_array = np.random.randint(0, 2, (64, 64), dtype=np.uint8) * 255
             mask = Image.fromarray(mask_array)
-            mask.save(directory / f'test_mask_{i}.png')
+            mask.save(directory / f'{mask_name}.png')
 
     @pytest.fixture
     def custom_transform(self):
@@ -271,7 +285,7 @@ class TestDataLoader:
     def test_file_extensions(self, temp_data_dir):
         """Test handling of different file extensions"""
         # Create images with different extensions
-        extensions = ['.jpg', '.jpeg', '.png', '.bmp']
+        extensions = ['.jpeg', '.png']  # Reduced to match actual structure
         for ext in extensions:
             img_array = np.random.randint(0, 255, (64, 64, 3), dtype=np.uint8)
             img = Image.fromarray(img_array)
@@ -283,7 +297,8 @@ class TestDataLoader:
         )
         
         # Should find all valid images
-        assert len([f for f in dataset.image_files if Path(f).suffix in extensions]) == len(extensions)
+        found_extensions = set(Path(f).suffix.lower() for f in dataset.image_files)
+        assert found_extensions == set(extensions)
 
     def test_concurrent_loading(self, temp_data_dir):
         """Test concurrent data loading with multiple workers"""

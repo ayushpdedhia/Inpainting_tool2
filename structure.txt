@@ -9,16 +9,16 @@ INPAINTING_TOOL2
 |       |   ├── README.MD
 │       ├── images
 │       │   ├── README.MD
-│       │   ├── test_image_001.JPEG
-│       │   ├── test_image_002.JPEG
-│       │   ├── test_image_003.JPEG
-│       │   ├── test_image_004.JPEG
-│       │   ├── test_image_005.JPEG
-│       │   ├── val_image_001.JPEG
-│       │   ├── val_image_002.JPEG
-│       │   ├── val_image_003.JPEG
-│       │   ├── val_image_004.JPEG
-│       │   └── val_image_005.JPEG
+│       │   ├── test_image_001.jpeg
+│       │   ├── test_image_002.jpeg
+│       │   ├── test_image_003.jpeg
+│       │   ├── test_image_004.jpeg
+│       │   ├── test_image_005.jpeg
+│       │   ├── val_image_001.jpeg
+│       │   ├── val_image_002.jpeg
+│       │   ├── val_image_003.jpeg
+│       │   ├── val_image_004.jpeg
+│       │   └── val_image_005.jpeg
 │       ├── masks
 │       │   ├── mask_corner.png
 │       │   ├── mask_edge.png
