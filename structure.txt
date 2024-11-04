@@ -393,8 +393,10 @@ Based on your codebase structure and dependencies between components, here's the
 
 1. First Level (Basic Components & Configuration):
 ```bash
-pytest tests/test_config.py Command: python -m pytest tests/test_config.py   
-pytest tests/test_mask_generator.py
+pytest tests/test_config.py 
+Command: python -m pytest tests/test_config.py   
+pytest tests/test_mask_generator.py 
+Command: python -m pytest tests/test_image_processor.py
 ```
 These tests verify the basic configuration and mask generation functionality that other components depend on.
 
@@ -496,4 +498,36 @@ tests/test_image_processor.py::TestImageProcessor::test_memory_efficiency PASSED
 ==================================================================== 15 passed, 1 warning in 3.52s ====================================================================
 
 ----------------------------------------------------------------------------------------------------------------xx----------------------------------------------------------------------------------------------------------------
+
+PS D:\Inpainting_tool2> python -m pytest tests/test_weight_loader.py  
+========================================================================= test session starts =========================================================================
+platform win32 -- Python 3.11.0, pytest-8.3.3, pluggy-1.5.0 -- D:\Inpainting_tool2\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Inpainting_tool2
+configfile: pytest.ini
+collected 13 items                                                                                                                                                     
+
+tests/test_weight_loader.py::TestWeightLoader::test_initialization PASSED                                                                                        [  7%]
+tests/test_weight_loader.py::TestWeightLoader::test_config_loading PASSED                                                                                        [ 15%]
+tests/test_weight_loader.py::TestWeightLoader::test_invalid_config_path PASSED                                                                                   [ 23%]
+tests/test_weight_loader.py::TestWeightLoader::test_device_selection PASSED                                                                                      [ 30%]
+tests/test_weight_loader.py::TestWeightLoader::test_checkpoint_logging PASSED                                                                                    [ 38%]
+tests/test_weight_loader.py::TestWeightLoader::test_load_model_weights PASSED                                                                                    [ 46%]
+tests/test_weight_loader.py::TestWeightLoader::test_load_vgg_weights PASSED                                                                                      [ 53%]
+tests/test_weight_loader.py::TestWeightLoader::test_dataparallel_handling PASSED                                                                                 [ 61%]
+tests/test_weight_loader.py::TestWeightLoader::test_missing_weight_files PASSED                                                                                  [ 69%]
+tests/test_weight_loader.py::TestWeightLoader::test_corrupt_weight_file PASSED                                                                                   [ 76%]
+tests/test_weight_loader.py::TestWeightLoader::test_device_mapping PASSED                                                                                        [ 84%]
+tests/test_weight_loader.py::TestWeightLoader::test_partial_state_dict PASSED                                                                                    [ 92%]
+tests/test_weight_loader.py::TestWeightLoader::test_memory_efficiency PASSED                                                                                     [100%]
+
+========================================================================== warnings summary ===========================================================================
+.venv\Lib\site-packages\streamlit\elements\image.py:22
+  D:\Inpainting_tool2\.venv\Lib\site-packages\streamlit\elements\image.py:22: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13
+    import imghdr
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+==================================================================== 13 passed, 1 warning in 3.53s ====================================================================
+----------------------------------------------------------------------------------------------------------------xx----------------------------------------------------------------------------------------------------------------
+
 
