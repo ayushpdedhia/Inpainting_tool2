@@ -241,10 +241,144 @@ tests/test_mask_generator.py::TestMaskGenerator::test_config_validation PASSED  
 tests/test_mask_generator.py::TestMaskGenerator::test_mask_loading PASSED                                                        [ 92%]
 tests/test_mask_generator.py::TestMaskGenerator::test_error_handling PASSED                                                      [100%]
 
-========================================================== warnings summary ===========================================================
+========================================================================================== warnings summary ==========================================================================================
 .venv\Lib\site-packages\streamlit\elements\image.py:22
   D:\Inpainting_tool2\.venv\Lib\site-packages\streamlit\elements\image.py:22: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13
     import imghdr
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================================================================== 14 passed, 1 warning in 3.42s ====================================================================================
+----------------------------------------------------------------------------------------------------------------
+
+
+=================================================================== test session starts =================================================================== 
+platform win32 -- Python 3.11.0, pytest-8.3.3, pluggy-1.5.0 -- D:\Inpainting_tool2\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Inpainting_tool2
+configfile: pytest.ini
+collected 24 items                                                                                                                                          
+
+tests/test_pconv.py::TestPartialConv2d::test_initialization PASSED                                                                                   [  4%] 
+tests/test_pconv.py::TestPartialConv2d::test_forward_pass PASSED                                                                                     [  8%] 
+tests/test_pconv.py::TestPartialConv2d::test_mask_update PASSED                                                                                      [ 12%] 
+tests/test_pconv.py::TestPartialConv2d::test_multi_channel_mask PASSED                                                                               [ 16%] 
+tests/test_pconv.py::TestPConvLoss::test_initialization PASSED                                                                                       [ 20%] 
+tests/test_pconv.py::TestPConvLoss::test_loss_computation PASSED                                                                                     [ 25%] 
+tests/test_pconv.py::TestPConvLoss::test_valid_hole_loss PASSED                                                                                      [ 29%]
+tests/test_pconv.py::TestPConvLoss::test_perceptual_loss PASSED                                                                                      [ 33%]
+tests/test_pconv.py::TestPConvLoss::test_style_loss PASSED                                                                                           [ 37%]
+tests/test_pconv.py::TestPConvLoss::test_total_variation_loss PASSED                                                                                 [ 41%]
+tests/test_pconv.py::TestPConvLoss::test_loss_weights PASSED                                                                                         [ 45%]
+tests/test_pconv.py::TestPConvLoss::test_gradients PASSED                                                                                            [ 50%]
+tests/test_pconv.py::TestVGGFeatureExtractor::test_initialization PASSED                                                                             [ 54%]
+tests/test_pconv.py::TestVGGFeatureExtractor::test_feature_extraction PASSED                                                                         [ 58%]
+tests/test_pconv.py::TestVGGFeatureExtractor::test_gram_matrix PASSED                                                                                [ 62%]
+tests/test_pconv.py::TestVGGFeatureExtractor::test_gram_matrix_batch PASSED                                                                          [ 66%] 
+tests/test_pconv.py::TestVGGFeatureExtractor::test_gram_matrix_values PASSED                                                                         [ 70%] 
+tests/test_pconv.py::TestVGGFeatureExtractor::test_layer_selection PASSED                                                                            [ 75%]
+tests/test_pconv.py::TestVGGFeatureExtractor::test_normalization PASSED                                                                              [ 79%] 
+tests/test_pconv.py::TestPConvUNet::test_initialization PASSED                                                                                       [ 83%]
+tests/test_pconv.py::TestPConvUNet::test_forward_pass PASSED                                                                                         [ 87%]
+tests/test_pconv.py::TestPConvUNet::test_skip_connections PASSED                                                                                     [ 91%]
+tests/test_pconv.py::TestPConvUNet::test_mask_propagation PASSED                                                                                     [ 95%]
+tests/test_pconv.py::TestPConvUNet::test_upsampling PASSED                                                                                           [100%]
+
+==================================================================== warnings summary ===================================================================== 
+.venv\Lib\site-packages\streamlit\elements\image.py:22
+  D:\Inpainting_tool2\.venv\Lib\site-packages\streamlit\elements\image.py:22: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13
+    import imghdr
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+============================================================= 24 passed, 1 warning in 16.93s ============================================================== 
+
+I'll explain the significance of each group of tests and what their passing means for your image inpainting project:
+
+TestPartialConv2d Tests:
+- test_initialization [PASSED]
+- test_forward_pass [PASSED]
+- test_mask_update [PASSED]
+- test_multi_channel_mask [PASSED]
+
+Significance: These tests confirm that your Partial Convolution layer, which is the core innovation for handling masked inputs, is working correctly. Specifically:
+
+Proper initialization of layer parameters and weights
+Correct forward propagation with and without masks
+Proper mask updating during convolution operations
+Ability to handle both single and multi-channel masks
+
+TestPConvLoss Tests:
+- test_initialization [PASSED]
+- test_loss_computation [PASSED]
+- test_valid_hole_loss [PASSED]
+- test_perceptual_loss [PASSED]
+- test_style_loss [PASSED]
+- test_total_variation_loss [PASSED]
+- test_loss_weights [PASSED]
+- test_gradients [PASSED]
+
+Significance: These tests verify your loss function components crucial for training the model:
+
+Proper computation of loss in valid (non-masked) regions
+Correct hole (masked region) loss calculation
+VGG-based perceptual loss functionality
+Style loss for texture matching
+Total variation loss for smoothness
+Proper weight application to different loss components
+Correct gradient computation for training
+
+TestVGGFeatureExtractor Tests:
+- test_initialization [PASSED]
+- test_feature_extraction [PASSED]
+- test_gram_matrix [PASSED]
+- test_gram_matrix_batch [PASSED]
+- test_gram_matrix_values [PASSED]
+- test_layer_selection [PASSED]
+- test_normalization [PASSED]
+
+Significance: These tests confirm the feature extraction functionality needed for perceptual and style losses:
+
+Proper VGG model initialization and weight freezing
+Correct feature extraction from different layers
+Accurate Gram matrix computation for style loss
+Proper batch processing
+Correct normalization of input images
+
+TestPConvUNet Tests:
+- test_initialization [PASSED]
+- test_forward_pass [PASSED]
+- test_skip_connections [PASSED]
+- test_mask_propagation [PASSED]
+- test_upsampling [PASSED]
+
+Significance: These tests verify the complete model architecture:
+
+Proper initialization of the full U-Net architecture
+Correct forward pass through the entire network
+Functioning skip connections between encoder and decoder
+Proper mask propagation through the network
+Correct upsampling behavior in the decoder path
+
+The passing of all these tests indicates that:
+
+Core Components: All fundamental components (partial convolutions, loss functions, feature extraction) are working as designed.
+Integration: The components work together properly in the full U-Net architecture.
+Training Readiness: The model is ready for training with:
+
+Proper gradient flow
+Correct loss computation
+Working feature extraction
+
+
+Quality Metrics: The model has all necessary components for generating high-quality inpainting results:
+
+Perceptual quality (VGG features)
+Texture matching (style loss)
+Smoothness (total variation)
+Proper handling of masked regions
+
+
+
+This comprehensive test coverage gives confidence that your implementation meets the project's goal of "generating plausible content for the masked areas while preserving the surrounding context" using partial convolutions.
+
+
 ----------------------------------------------------------------------------------------------------------------

@@ -1,154 +1,248 @@
+# tests/test_model_manager.py
+
 import pytest
 import torch
 import numpy as np
-from pathlib import Path
 from PIL import Image
+import os
+from pathlib import Path
+import tempfile
+import shutil
+from unittest.mock import MagicMock, patch
+from collections import OrderedDict
 
 from src.core.model_manager import ModelManager
-from src.utils.image_processor import ImageProcessor
-from src.utils.mask_generator import MaskGenerator
+from src.models.pconv.models.pconv_unet import PConvUNet
+from src.models.pconv.loss import PConvLoss
 
 class TestModelManager:
+    """Test suite for ModelManager class"""
+
     @pytest.fixture
-    def model_manager(self):
-        """Initialize model manager for each test"""
-        return ModelManager()
+    def mock_weights_dir(self):
+        """Fixture providing temporary weights directory with mock weights"""
+        temp_dir = tempfile.mkdtemp()
+        weights_dir = Path(temp_dir) / 'weights' / 'pconv'
+        weights_dir.mkdir(parents=True)
         
+        # Create mock weight directories
+        (weights_dir / 'unet').mkdir()
+        (weights_dir / 'vgg16').mkdir()
+        
+        # Create mock weight files
+        mock_state_dict = OrderedDict([
+            ('encoder.features.0.weight', torch.randn(64, 3, 7, 7)),
+            ('encoder.features.0.bias', torch.randn(64)),
+            ('decoder.conv1.weight', torch.randn(64, 64, 3, 3)),
+            ('decoder.conv1.bias', torch.randn(64))
+        ])
+        
+        torch.save(mock_state_dict, weights_dir / 'unet' / 'model_weights.pth')
+        torch.save(mock_state_dict, weights_dir / 'vgg16' / 'vgg16_weights.pth')
+        
+        yield temp_dir
+        shutil.rmtree(temp_dir)
+
     @pytest.fixture
-    def image_processor(self):
-        """Initialize image processor for each test"""
-        return ImageProcessor()
-    
+    def model_manager(self, mock_weights_dir):
+        """Fixture providing ModelManager instance with mock weights"""
+        with patch('src.core.model_manager.os.path.dirname') as mock_dirname:
+            mock_dirname.return_value = str(Path(mock_weights_dir) / 'src' / 'core')
+            return ModelManager()
+
     @pytest.fixture
-    def test_data_dir(self):
-        """Get test data directory"""
-        return Path("data/test_samples")
-    
-    def test_model_initialization(self, model_manager):
-        """Test if model initializes correctly"""
-        assert model_manager.models is not None
+    def test_image(self):
+        """Fixture providing test image"""
+        image = np.zeros((256, 256, 3), dtype=np.float32)
+        # Add some patterns for testing
+        image[50:150, 50:150] = 1.0  # White square
+        image[100:200, 100:200, 0] = 1.0  # Red square
+        return image
+
+    @pytest.fixture
+    def test_mask(self):
+        """Fixture providing test mask"""
+        mask = np.ones((256, 256), dtype=np.float32)
+        mask[100:200, 100:200] = 0  # Area to inpaint
+        return mask
+
+    def test_initialization(self, model_manager):
+        """Test ModelManager initialization"""
+        assert isinstance(model_manager, ModelManager)
+        assert hasattr(model_manager, 'models')
+        assert hasattr(model_manager, 'device')
         assert 'partial convolutions' in model_manager.models
-        assert isinstance(model_manager.models['partial convolutions'], torch.nn.Module)
-    
-    def test_model_device(self, model_manager):
-        """Test if model is on correct device"""
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        assert model_manager.device == device
-        
-        # Check if model parameters are on correct device
+        assert isinstance(model_manager.models['partial convolutions'], PConvUNet)
+
+    def test_model_loading(self, model_manager):
+        """Test model loading functionality"""
+        # Verify model is loaded correctly
         model = model_manager.models['partial convolutions']
-        assert next(model.parameters()).device == device
-    
+        assert model.training is False  # Should be in eval mode
+        assert next(model.parameters()).device == model_manager.device
+
+    def test_preprocess_inputs(self, model_manager, test_image, test_mask):
+        """Test input preprocessing"""
+        image_tensor, mask_tensor = model_manager.preprocess_inputs(test_image, test_mask)
+        
+        # Check tensor properties
+        assert isinstance(image_tensor, torch.Tensor)
+        assert isinstance(mask_tensor, torch.Tensor)
+        assert image_tensor.dim() == 4  # [B, C, H, W]
+        assert mask_tensor.dim() == 4  # [B, 1, H, W]
+        assert image_tensor.shape[1] == 3  # 3 channels
+        assert mask_tensor.shape[1] == 1  # 1 channel
+
+    def test_postprocess_output(self, model_manager):
+        """Test output postprocessing"""
+        # Create mock tensors
+        output = torch.rand(1, 3, 256, 256)
+        original = torch.rand(1, 3, 256, 256)
+        mask = torch.ones(1, 1, 256, 256)
+        
+        result = model_manager.postprocess_output(output, original, mask)
+        
+        assert isinstance(result, np.ndarray)
+        assert result.shape == (256, 256, 3)
+        assert np.all(result >= 0) and np.all(result <= 1)
+
+    def test_inpainting(self, model_manager, test_image, test_mask):
+        """Test complete inpainting process"""
+        try:
+            result = model_manager.inpaint(test_image, test_mask)
+            
+            # Check result properties
+            assert isinstance(result, np.ndarray)
+            assert result.shape == test_image.shape
+            assert result.dtype == np.float32
+            assert np.all(result >= 0) and np.all(result <= 1)
+            
+            # Check if inpainting was performed
+            masked_region = result[test_mask < 0.5]
+            assert not np.all(masked_region == 0)
+            
+        except Exception as e:
+            pytest.fail(f"Inpainting failed: {str(e)}")
+
     def test_available_models(self, model_manager):
         """Test available models listing"""
         models = model_manager.get_available_models()
         assert isinstance(models, dict)
         assert 'partial convolutions' in models
+        assert models['partial convolutions'] == 'pdvgg16_bn'
+
+    def test_model_info(self, model_manager):
+        """Test model information retrieval"""
+        info = model_manager.get_model_info('partial convolutions')
+        assert isinstance(info, dict)
+        assert 'name' in info
+        assert 'type' in info
+        assert 'parameters' in info
+        assert 'device' in info
+        assert info['type'] == 'PConvUNet'
+
+    def test_invalid_model_name(self, model_manager, test_image, test_mask):
+        """Test handling of invalid model name"""
+        with pytest.raises(ValueError):
+            model_manager.inpaint(test_image, test_mask, model_name='nonexistent_model')
+
+    def test_invalid_input_shapes(self, model_manager):
+        """Test handling of invalid input shapes"""
+        # Test invalid image shape
+        invalid_image = np.zeros((100, 100))  # Missing channel dimension
+        valid_mask = np.ones((100, 100))
         
-    @pytest.mark.parametrize("test_image", [
-        "test_image_001.JPEG",  # Microscope image
-        "test_image_002.JPEG",  # Purple flower
-        "test_image_003.JPEG",  # Sea cucumber
-        "test_image_004.JPEG",  # Magpie
-        "test_image_005.JPEG"   # Vintage TV
-    ])
-    def test_inpainting_different_images(self, model_manager, image_processor, test_data_dir, test_image):
-        """Test inpainting on different types of images"""
-        # Load test image
-        image_path = test_data_dir / "images" / test_image
-        image = Image.open(image_path)
-        image_np = np.array(image) / 255.0  # Normalize to [0, 1]
+        with pytest.raises(ValueError):
+            model_manager.inpaint(invalid_image, valid_mask)
         
-        # Create a simple test mask
-        mask = np.ones((image_np.shape[0], image_np.shape[1]), dtype=np.float32)
-        mask[100:200, 100:200] = 0  # Create a hole
+        # Test invalid mask shape
+        valid_image = np.zeros((100, 100, 3))
+        invalid_mask = np.ones((50, 50))  # Wrong size
         
-        # Run inpainting
-        try:
-            result = model_manager.inpaint(image_np, mask)
-            
-            # Verify result
-            assert isinstance(result, np.ndarray)
-            assert result.shape == image_np.shape
-            assert not np.any(np.isnan(result))
-            assert result.min() >= 0 and result.max() <= 1
-            
-            # Verify hole region has been filled
-            hole_region = result[100:200, 100:200]
-            assert not np.all(hole_region == 0)
-            
-        except Exception as e:
-            pytest.fail(f"Inpainting failed for {test_image}: {str(e)}")
-    
-    @pytest.mark.parametrize("mask_file", [
-        "mask_large.png",
-        "mask_edge.png",
-        "mask_thick.png",
-        "mask_thin.png",
-        "mask_corner.png",
-        "mask_small.png"
-    ])
-    def test_inpainting_different_masks(self, model_manager, image_processor, test_data_dir, mask_file):
-        """Test inpainting with different mask types"""
-        # Load test image (using first test image for all masks)
-        image_path = test_data_dir / "images" / "test_image_001.JPEG"
-        image = Image.open(image_path)
-        image_np = np.array(image) / 255.0
+        with pytest.raises(ValueError):
+            model_manager.inpaint(valid_image, invalid_mask)
+
+    def test_device_handling(self, model_manager, test_image, test_mask):
+        """Test handling of different devices"""
+        result = model_manager.inpaint(test_image, test_mask)
+        assert isinstance(result, np.ndarray)
+        assert result.device == np.dtype('float32').type  # Should be back on CPU
+
+    def test_model_consistency(self, model_manager, test_image, test_mask):
+        """Test model output consistency"""
+        # Run inpainting twice with same input
+        result1 = model_manager.inpaint(test_image, test_mask)
+        result2 = model_manager.inpaint(test_image, test_mask)
         
-        # Load mask
-        mask_path = test_data_dir / "masks" / mask_file
-        mask = np.array(Image.open(mask_path).convert('L')) / 255.0
-        
-        # Resize mask if needed
-        if mask.shape[:2] != image_np.shape[:2]:
-            mask = np.array(Image.fromarray((mask * 255).astype(np.uint8)).resize(
-                image_np.shape[:2][::-1], Image.NEAREST)) / 255.0
-        
-        try:
-            result = model_manager.inpaint(image_np, mask)
-            
-            # Verify result
-            assert isinstance(result, np.ndarray)
-            assert result.shape == image_np.shape
-            assert not np.any(np.isnan(result))
-            assert result.min() >= 0 and result.max() <= 1
-            
-            # Verify holes have been filled
-            hole_regions = result[mask < 0.5]
-            assert not np.all(hole_regions == 0)
-            
-        except Exception as e:
-            pytest.fail(f"Inpainting failed for {mask_file}: {str(e)}")
-    
-    def test_model_consistency(self, model_manager, image_processor, test_data_dir):
-        """Test if model produces consistent results for same input"""
-        # Load test image
-        image_path = test_data_dir / "images" / "test_image_001.JPEG"
-        image = Image.open(image_path)
-        image_np = np.array(image) / 255.0
-        
-        # Create simple mask
-        mask = np.ones((image_np.shape[0], image_np.shape[1]), dtype=np.float32)
-        mask[100:200, 100:200] = 0
-        
-        # Run inpainting twice
-        result1 = model_manager.inpaint(image_np, mask)
-        result2 = model_manager.inpaint(image_np, mask)
-        
-        # Check results are identical
+        # Results should be identical
         np.testing.assert_array_almost_equal(result1, result2)
 
+    def test_batch_processing(self, model_manager):
+        """Test batch processing capabilities"""
+        # Create batch of images and masks
+        batch_size = 2
+        images = np.stack([np.random.rand(256, 256, 3) for _ in range(batch_size)])
+        masks = np.stack([np.ones((256, 256)) for _ in range(batch_size)])
+        
+        # Process each image individually
+        results = []
+        for i in range(batch_size):
+            result = model_manager.inpaint(images[i], masks[i])
+            results.append(result)
+        
+        assert len(results) == batch_size
+        assert all(r.shape == (256, 256, 3) for r in results)
+
+    def test_memory_efficiency(self, model_manager):
+        """Test memory efficiency during inpainting"""
+        import psutil
+        process = psutil.Process()
+        initial_memory = process.memory_info().rss
+        
+        # Process large image
+        large_image = np.random.rand(1024, 1024, 3).astype(np.float32)
+        large_mask = np.ones((1024, 1024), dtype=np.float32)
+        
+        _ = model_manager.inpaint(large_image, large_mask)
+        
+        final_memory = process.memory_info().rss
+        memory_increase = final_memory - initial_memory
+        
+        # Memory increase should be reasonable (less than 2GB for single image)
+        assert memory_increase < 2 * 1024 * 1024 * 1024
+
     def test_error_handling(self, model_manager):
-        """Test error handling for invalid inputs"""
-        # Test invalid image
+        """Test error handling for various scenarios"""
+        # Test with invalid image type
         with pytest.raises(ValueError):
-            model_manager.inpaint(np.zeros((100, 100)), np.zeros((50, 50)))
+            model_manager.inpaint("not_an_image", np.zeros((100, 100)))
         
-        # Test invalid mask
+        # Test with incompatible image and mask sizes
         with pytest.raises(ValueError):
-            model_manager.inpaint(np.zeros((100, 100, 3)), np.zeros((50, 50)))
+            model_manager.inpaint(
+                np.zeros((100, 100, 3)),
+                np.zeros((200, 200))
+            )
         
-        # Test invalid model name
+        # Test with invalid number of channels
         with pytest.raises(ValueError):
-            model_manager.inpaint(np.zeros((100, 100, 3)), np.zeros((100, 100)), 
-                                model_name="nonexistent_model")
+            model_manager.inpaint(
+                np.zeros((100, 100, 4)),  # 4 channels
+                np.zeros((100, 100))
+            )
+
+    def test_output_validation(self, model_manager):
+        """Test output validation for different input sizes"""
+        test_sizes = [(128, 128), (256, 256), (512, 512)]
+        
+        for h, w in test_sizes:
+            image = np.random.rand(h, w, 3).astype(np.float32)
+            mask = np.ones((h, w), dtype=np.float32)
+            mask[h//4:3*h//4, w//4:3*w//4] = 0
+            
+            result = model_manager.inpaint(image, mask)
+            assert result.shape == (h, w, 3)
+            assert np.all(result >= 0) and np.all(result <= 1)
+
+if __name__ == '__main__':
+    pytest.main([__file__])
