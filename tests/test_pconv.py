@@ -380,26 +380,35 @@ class TestPConvUNet:
     
 
     def test_upsampling(self, model, device):
-        """Test upsampling with high contrast pattern"""
-        # Create high contrast input that will show upsampling differences
-        x = torch.zeros(1, 3, 32, 32).to(device)
-        x[..., :16, :16] = 1.0
-        x[..., 16:, 16:] = -1.0
-        mask = torch.ones(1, 1, 32, 32).to(device)
+        """Test upsampling with high contrast pattern and batch size > 1"""
+        torch.manual_seed(0)  # For reproducibility
         
-        # Create two models with different upsampling
+        # Create sharper contrast pattern
+        x = torch.zeros(2, 3, 32, 32, device=device)
+        x[:, :, :16, :16] = 1.0   # Top-left quadrant
+        x[:, :, 16:, 16:] = -1.0  # Bottom-right quadrant
+        
+        # Create a mask with some holes
+        mask = torch.ones(2, 1, 32, 32, device=device)
+        mask[:, :, 8:24, 8:24] = 0  # Create hole in the middle
+        
+        # Models with different upsampling modes
         model_nearest = PConvUNet(upsampling_mode='nearest').to(device)
         model_bilinear = PConvUNet(upsampling_mode='bilinear').to(device)
         
-        # Force train mode to ensure all operations are active
-        model_nearest.train()
-        model_bilinear.train()
+        # Ensure models are in eval mode for consistent behavior
+        model_nearest.eval()
+        model_bilinear.eval()
         
         with torch.no_grad():
-            # Process at different scales to amplify differences
             out_nearest = model_nearest(x, mask)
             out_bilinear = model_bilinear(x, mask)
         
-        # Focus on edge regions where differences should be largest
-        edge_diff = (out_nearest - out_bilinear)[..., 15:17, 15:17].abs().mean().item()
+        # Calculate difference at the edges where upsampling modes differ most
+        edge_mask = torch.zeros_like(x)
+        edge_mask[:, :, 15:17, :] = 1  # Horizontal edge
+        edge_mask[:, :, :, 15:17] = 1  # Vertical edge
+        
+        edge_diff = ((out_nearest - out_bilinear) * edge_mask).abs().mean().item()
+        
         assert edge_diff > 1e-3, f"Upsampling modes should differ at edges (diff={edge_diff})"

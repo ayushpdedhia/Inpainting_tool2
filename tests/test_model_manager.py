@@ -46,11 +46,11 @@ class TestModelManager:
         assert 'partial convolutions' in models
         
     @pytest.mark.parametrize("test_image", [
-        "test_image_001.jpg",  # Microscope image
-        "test_image_002.jpg",  # Purple flower
-        "test_image_003.jpg",  # Sea cucumber
-        "test_image_004.jpg",  # Magpie
-        "test_image_005.jpg"   # Vintage TV
+        "test_image_001.JPEG",  # Microscope image
+        "test_image_002.JPEG",  # Purple flower
+        "test_image_003.JPEG",  # Sea cucumber
+        "test_image_004.JPEG",  # Magpie
+        "test_image_005.JPEG"   # Vintage TV
     ])
     def test_inpainting_different_images(self, model_manager, image_processor, test_data_dir, test_image):
         """Test inpainting on different types of images"""
@@ -91,7 +91,7 @@ class TestModelManager:
     def test_inpainting_different_masks(self, model_manager, image_processor, test_data_dir, mask_file):
         """Test inpainting with different mask types"""
         # Load test image (using first test image for all masks)
-        image_path = test_data_dir / "images" / "test_image_001.jpg"
+        image_path = test_data_dir / "images" / "test_image_001.JPEG"
         image = Image.open(image_path)
         image_np = np.array(image) / 255.0
         
@@ -123,7 +123,7 @@ class TestModelManager:
     def test_model_consistency(self, model_manager, image_processor, test_data_dir):
         """Test if model produces consistent results for same input"""
         # Load test image
-        image_path = test_data_dir / "images" / "test_image_001.jpg"
+        image_path = test_data_dir / "images" / "test_image_001.JPEG"
         image = Image.open(image_path)
         image_np = np.array(image) / 255.0
         
