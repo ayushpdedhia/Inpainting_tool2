@@ -80,37 +80,83 @@ class ModelManager:
             raise
 
     def preprocess_inputs(self, image: np.ndarray, mask: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Preprocess numpy inputs to torch tensors"""
-        # Print shapes for debugging
-        print(f"Input image shape: {image.shape}")
-        print(f"Input mask shape: {mask.shape}")
+        """
+        Preprocess numpy inputs to torch tensors.
         
-        # Validate input shapes
-        if len(image.shape) != 3:
-            raise ValueError(f"Expected image with shape [H, W, C], got {image.shape}")
-        if len(mask.shape) not in [2, 3]:
-            raise ValueError(f"Expected mask with shape [H, W] or [H, W, 1], got {mask.shape}")
+        Args:
+            image (np.ndarray): Input image in numpy format with shape [H, W, C], 
+                            where C=3 for RGB images. Values should be in range [0, 1].
+            mask (np.ndarray): Binary mask with shape [H, W] or [H, W, 1], 
+                            where 1 indicates regions to keep and 0 indicates regions to inpaint.
+                            
+        Returns:
+            Tuple[torch.Tensor, torch.Tensor]: Preprocessed image and mask tensors with shapes 
+            [1, C, H, W] and [1, 1, H, W] respectively.
+            
+        Raises:
+            ValueError: If inputs don't match expected formats, shapes, or value ranges.
+            TypeError: If inputs aren't numpy arrays.
+        """
+        try:
+            # Type validation
+            if not isinstance(image, np.ndarray):
+                raise TypeError(f"Expected image to be numpy array, got {type(image)}")
+            if not isinstance(mask, np.ndarray):
+                raise TypeError(f"Expected mask to be numpy array, got {type(mask)}")
 
-        # Convert to float32
-        image = image.astype(np.float32)
-        mask = mask.astype(np.float32)
+            # Print shapes for debugging
+            print(f"Input image shape: {image.shape}")
+            print(f"Input mask shape: {mask.shape}")
 
-        # Ensure mask is 2D
-        if len(mask.shape) == 3:
-            mask = mask.squeeze(-1)
+            # Shape validation
+            if len(image.shape) != 3:
+                raise ValueError(f"Expected image with shape [H, W, C], got {image.shape}")
+            if len(mask.shape) not in [2, 3]:
+                raise ValueError(f"Expected mask with shape [H, W] or [H, W, 1], got {mask.shape}")
+            
+            # Channel validation
+            if image.shape[2] != 3:
+                raise ValueError(f"Expected 3 channels (RGB) for image, got {image.shape[2]}")
 
-        # Invert mask for processing (0 for regions to keep, 1 for regions to inpaint)
-        inv_mask = 1 - mask
+            # Dimension matching
+            img_h, img_w = image.shape[:2]
+            mask_h, mask_w = mask.shape[:2]
+            if img_h != mask_h or img_w != mask_w:
+                raise ValueError(
+                    f"Image dimensions ({img_h}, {img_w}) must match mask dimensions ({mask_h}, {mask_w})"
+                )
 
-        # Convert to tensors and reshape
-        image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0)
-        mask_tensor = torch.from_numpy(inv_mask).unsqueeze(0).unsqueeze(0)
+            # Value range validation
+            if np.min(image) < 0 or np.max(image) > 1:
+                raise ValueError(f"Image values must be in range [0, 1], got range [{np.min(image)}, {np.max(image)}]")
+            if np.min(mask) < 0 or np.max(mask) > 1:
+                raise ValueError(f"Mask values must be in range [0, 1], got range [{np.min(mask)}, {np.max(mask)}]")
 
-        # Print tensor shapes for debugging
-        print(f"Preprocessed image tensor shape: {image_tensor.shape}")
-        print(f"Preprocessed mask tensor shape: {mask_tensor.shape}")
+            # Convert to float32
+            image = image.astype(np.float32)
+            mask = mask.astype(np.float32)
 
-        return image_tensor, mask_tensor
+            # Ensure mask is 2D
+            if len(mask.shape) == 3:
+                mask = mask.squeeze(-1)
+
+            # Invert mask for processing (0 for regions to keep, 1 for regions to inpaint)
+            inv_mask = 1 - mask
+
+            # Convert to tensors and reshape
+            image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0)
+            mask_tensor = torch.from_numpy(inv_mask).unsqueeze(0).unsqueeze(0)
+
+            # Print tensor shapes for debugging
+            print(f"Preprocessed image tensor shape: {image_tensor.shape}")
+            print(f"Preprocessed mask tensor shape: {mask_tensor.shape}")
+
+            return image_tensor, mask_tensor
+
+        except Exception as e:
+            print(f"Error in preprocessing: {str(e)}")
+            print(f"Stack trace: {traceback.format_exc()}")
+            raise
 
     def postprocess_output(self, output: torch.Tensor, original: torch.Tensor, mask: torch.Tensor) -> np.ndarray:
         """Postprocess model output"""
@@ -131,19 +177,36 @@ class ModelManager:
 
     def inpaint(self, image: np.ndarray, mask: np.ndarray, model_name: str = 'partial convolutions') -> np.ndarray:
         """
-        Inpaint the image using the selected model
+        Inpaint the image using the selected model.
+        
         Args:
-            image: Input image [H, W, C]
-            mask: Binary mask [H, W] where 1 indicates regions to keep
-            model_name: Name of the model to use
+            image (np.ndarray): Input image with shape [H, W, C] in range [0, 1]
+            mask (np.ndarray): Binary mask with shape [H, W] where 1 indicates regions to keep
+            model_name (str, optional): Name of the model to use. Defaults to 'partial convolutions'.
+            
         Returns:
-            Inpainted image [H, W, C]
+            np.ndarray: Inpainted image with shape [H, W, C] in range [0, 1]
+            
+        Raises:
+            ValueError: For invalid inputs or model configuration
+            TypeError: For incorrect input types
+            RuntimeError: For model execution errors
         """
         try:
+            # Input validation
+            if not isinstance(image, np.ndarray):
+                raise TypeError(f"Expected image to be numpy array, got {type(image)}")
+            if not isinstance(mask, np.ndarray):
+                raise TypeError(f"Expected mask to be numpy array, got {type(mask)}")
+            if not isinstance(model_name, str):
+                raise TypeError(f"Expected model_name to be string, got {type(model_name)}")
+
             # Validate model availability
             model_name = model_name.lower()
             if model_name not in self.models:
-                raise ValueError(f"Model {model_name} not available. Available models: {list(self.models.keys())}")
+                raise ValueError(
+                    f"Model {model_name} not available. Available models: {list(self.models.keys())}"
+                )
 
             # Preprocess inputs
             image_tensor, mask_tensor = self.preprocess_inputs(image, mask)
@@ -165,17 +228,34 @@ class ModelManager:
                 
                 # Validate output
                 if not isinstance(output, torch.Tensor):
-                    raise ValueError(f"Model output is not a tensor. Got {type(output)}")
+                    raise TypeError(f"Model output is not a tensor. Got {type(output)}")
                 
                 if len(output.shape) != 4:
                     raise ValueError(f"Expected output shape [N, C, H, W], got {output.shape}")
+                
+                if output.shape[1] != 3:
+                    raise ValueError(f"Expected 3 output channels, got {output.shape[1]}")
                 
                 # Calculate loss for monitoring
                 loss, loss_dict = criterion(output, image_tensor, mask_tensor)
                 print("Loss components:", {k: v.item() for k, v in loss_dict.items()})
                 
+                # Validate output values
+                if torch.isnan(output).any():
+                    raise ValueError("Model output contains NaN values")
+                
+                if torch.isinf(output).any():
+                    raise ValueError("Model output contains infinite values")
+                
                 # Postprocess output
                 result = self.postprocess_output(output, image_tensor, mask_tensor)
+                
+                # Final validation of result
+                if not isinstance(result, np.ndarray):
+                    raise TypeError(f"Expected numpy array output, got {type(result)}")
+                
+                if result.shape != image.shape:
+                    raise ValueError(f"Output shape {result.shape} doesn't match input shape {image.shape}")
             
             return result
             
