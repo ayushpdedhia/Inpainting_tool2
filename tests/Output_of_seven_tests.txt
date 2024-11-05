@@ -1,0 +1,262 @@
+Output of 7 tests
+
+Output of test_config.py 
+------------------------
+
+PS D:\Inpainting_tool2> python -m pytest tests/test_config.py       
+======================================================================== test session starts ========================================================================
+platform win32 -- Python 3.11.0, pytest-8.3.3, pluggy-1.5.0 -- D:\Inpainting_tool2\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Inpainting_tool2
+configfile: pytest.ini
+collected 14 items                                                                                                                                                   
+
+tests/test_config.py::TestConfiguration::test_valid_config_loading PASSED                                                                                      [  7%] 
+tests/test_config.py::TestConfiguration::test_model_configuration PASSED                                                                                       [ 14%]
+tests/test_config.py::TestConfiguration::test_missing_required_fields PASSED                                                                                   [ 21%] 
+tests/test_config.py::TestConfiguration::test_invalid_model_name PASSED                                                                                        [ 28%]
+tests/test_config.py::TestConfiguration::test_path_validation PASSED                                                                                           [ 35%] 
+tests/test_config.py::TestConfiguration::test_interface_configuration PASSED                                                                                   [ 42%]
+tests/test_config.py::TestConfiguration::test_invalid_device_configuration PASSED                                                                              [ 50%] 
+tests/test_config.py::TestConfiguration::test_invalid_input_size PASSED                                                                                        [ 57%]
+tests/test_config.py::TestConfiguration::test_supported_formats_validation PASSED                                                                              [ 64%] 
+tests/test_config.py::TestConfiguration::test_weight_paths_validation PASSED                                                                                   [ 71%] 
+tests/test_config.py::TestConfiguration::test_config_type_validation PASSED                                                                                    [ 78%]
+tests/test_config.py::TestConfiguration::test_environment_specific_config PASSED                                                                               [ 85%] 
+tests/test_config.py::TestConfiguration::test_config_file_permissions PASSED                                                                                   [ 92%] 
+tests/test_config.py::TestConfiguration::test_malformed_yaml PASSED                                                                                            [100%] 
+
+======================================================================== 14 passed in 2.06s ========================================================================= 
+
+
+Output of test_data_loader.py 
+-----------------------------
+
+PS D:\Inpainting_tool2> python -m pytest tests/test_data_loader.py  
+======================================================================== test session starts ========================================================================
+platform win32 -- Python 3.11.0, pytest-8.3.3, pluggy-1.5.0 -- D:\Inpainting_tool2\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Inpainting_tool2
+configfile: pytest.ini
+collected 15 items                                                                                                                                                   
+
+tests/test_data_loader.py::TestDataLoader::test_dataset_initialization PASSED                                                                                  [  6%]
+tests/test_data_loader.py::TestDataLoader::test_dataset_without_masks PASSED                                                                                   [ 13%]
+tests/test_data_loader.py::TestDataLoader::test_dataset_with_transform PASSED                                                                                  [ 20%]
+tests/test_data_loader.py::TestDataLoader::test_dataset_item_loading PASSED                                                                                    [ 26%]
+tests/test_data_loader.py::TestDataLoader::test_invalid_image_dir PASSED                                                                                       [ 33%] 
+tests/test_data_loader.py::TestDataLoader::test_empty_image_dir PASSED                                                                                         [ 40%]
+tests/test_data_loader.py::TestDataLoader::test_custom_image_size PASSED                                                                                       [ 46%]
+tests/test_data_loader.py::TestDataLoader::test_invalid_image_files PASSED                                                                                     [ 53%]
+tests/test_data_loader.py::TestDataLoader::test_data_loader_creation PASSED                                                                                    [ 60%]
+tests/test_data_loader.py::TestDataLoader::test_custom_data_loader_params PASSED                                                                               [ 66%]
+tests/test_data_loader.py::TestDataLoader::test_mask_cycling PASSED                                                                                            [ 73%]
+tests/test_data_loader.py::TestDataLoader::test_transform_consistency PASSED                                                                                   [ 80%]
+tests/test_data_loader.py::TestDataLoader::test_memory_management PASSED                                                                                       [ 86%]
+tests/test_data_loader.py::TestDataLoader::test_file_extensions PASSED                                                                                         [ 93%]
+tests/test_data_loader.py::TestDataLoader::test_concurrent_loading PASSED                                                                                      [100%]
+
+========================================================================= warnings summary ========================================================================== 
+.venv\Lib\site-packages\streamlit\elements\image.py:22
+  D:\Inpainting_tool2\.venv\Lib\site-packages\streamlit\elements\image.py:22: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13        
+    import imghdr
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================================================== 15 passed, 1 warning in 27.58s =================================================================== 
+
+ 
+
+
+
+Output of test_image_processor.py 
+-----------------------------
+
+PS D:\Inpainting_tool2> python -m pytest tests/test_image_processor.py
+======================================================================== test session starts ========================================================================
+platform win32 -- Python 3.11.0, pytest-8.3.3, pluggy-1.5.0 -- D:\Inpainting_tool2\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Inpainting_tool2
+configfile: pytest.ini
+collected 15 items                                                                                                                                                   
+
+tests/test_image_processor.py::TestImageProcessor::test_processing_config_initialization PASSED                                                                [  6%] 
+tests/test_image_processor.py::TestImageProcessor::test_processor_initialization PASSED                                                                        [ 13%] 
+tests/test_image_processor.py::TestImageProcessor::test_preprocess_pil_image PASSED                                                                            [ 20%] 
+tests/test_image_processor.py::TestImageProcessor::test_preprocess_numpy_array PASSED                                                                          [ 26%]
+tests/test_image_processor.py::TestImageProcessor::test_custom_target_size PASSED                                                                              [ 33%] 
+tests/test_image_processor.py::TestImageProcessor::test_image_normalization PASSED                                                                             [ 40%]
+tests/test_image_processor.py::TestImageProcessor::test_mask_binarization PASSED                                                                               [ 46%] 
+tests/test_image_processor.py::TestImageProcessor::test_vgg_normalization PASSED                                                                               [ 53%] 
+tests/test_image_processor.py::TestImageProcessor::test_postprocess PASSED                                                                                     [ 60%]
+tests/test_image_processor.py::TestImageProcessor::test_tensor_conversion PASSED                                                                               [ 66%]
+tests/test_image_processor.py::TestImageProcessor::test_error_handling PASSED                                                                                  [ 73%] 
+tests/test_image_processor.py::TestImageProcessor::test_resize_consistency PASSED                                                                              [ 80%]
+tests/test_image_processor.py::TestImageProcessor::test_batch_handling PASSED                                                                                  [ 86%]
+tests/test_image_processor.py::TestImageProcessor::test_edge_cases PASSED                                                                                      [ 93%]
+tests/test_image_processor.py::TestImageProcessor::test_memory_efficiency PASSED                                                                               [100%]
+
+========================================================================= warnings summary ========================================================================== 
+.venv\Lib\site-packages\streamlit\elements\image.py:22
+  D:\Inpainting_tool2\.venv\Lib\site-packages\streamlit\elements\image.py:22: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13        
+    import imghdr
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================================================== 15 passed, 1 warning in 3.61s ===================================================================
+
+
+Output of test_mask_generator.py 
+-----------------------------
+
+PS D:\Inpainting_tool2> python -m pytest tests/test_mask_generator.py 
+======================================================================== test session starts ========================================================================
+platform win32 -- Python 3.11.0, pytest-8.3.3, pluggy-1.5.0 -- D:\Inpainting_tool2\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Inpainting_tool2
+configfile: pytest.ini
+collected 14 items                                                                                                                                                   
+
+tests/test_mask_generator.py::TestMaskGenerator::test_initialization PASSED                                                                                    [  7%] 
+tests/test_mask_generator.py::TestMaskGenerator::test_sample_generation PASSED                                                                                 [ 14%] 
+tests/test_mask_generator.py::TestMaskGenerator::test_reproducibility PASSED                                                                                   [ 21%]
+tests/test_mask_generator.py::TestMaskGenerator::test_mask_properties[mask_large.png] PASSED                                                                   [ 28%]
+tests/test_mask_generator.py::TestMaskGenerator::test_mask_properties[mask_edge.png] PASSED                                                                    [ 35%] 
+tests/test_mask_generator.py::TestMaskGenerator::test_mask_properties[mask_thick.png] PASSED                                                                   [ 42%]
+tests/test_mask_generator.py::TestMaskGenerator::test_mask_properties[mask_thin.png] PASSED                                                                    [ 50%] 
+tests/test_mask_generator.py::TestMaskGenerator::test_mask_properties[mask_corner.png] PASSED                                                                  [ 57%] 
+tests/test_mask_generator.py::TestMaskGenerator::test_mask_properties[mask_small.png] PASSED                                                                   [ 64%]
+tests/test_mask_generator.py::TestMaskGenerator::test_shape_generation PASSED                                                                                  [ 71%] 
+tests/test_mask_generator.py::TestMaskGenerator::test_mask_variety PASSED                                                                                      [ 78%]
+tests/test_mask_generator.py::TestMaskGenerator::test_config_validation PASSED                                                                                 [ 85%] 
+tests/test_mask_generator.py::TestMaskGenerator::test_mask_loading PASSED                                                                                      [ 92%]
+tests/test_mask_generator.py::TestMaskGenerator::test_error_handling PASSED                                                                                    [100%] 
+
+========================================================================= warnings summary ========================================================================== 
+.venv\Lib\site-packages\streamlit\elements\image.py:22
+  D:\Inpainting_tool2\.venv\Lib\site-packages\streamlit\elements\image.py:22: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13        
+    import imghdr
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================================================== 14 passed, 1 warning in 3.62s ===================================================================
+
+
+
+Output of test_model_manager.py 
+-----------------------------
+PS D:\Inpainting_tool2> python -m pytest tests/test_model_manager.py  
+======================================================================== test session starts ========================================================================
+platform win32 -- Python 3.11.0, pytest-8.3.3, pluggy-1.5.0 -- D:\Inpainting_tool2\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Inpainting_tool2
+configfile: pytest.ini
+collected 15 items                                                                                                                                                   
+
+tests/test_model_manager.py::TestModelManager::test_initialization PASSED                                                                                      [  6%]
+tests/test_model_manager.py::TestModelManager::test_model_loading PASSED                                                                                       [ 13%]
+tests/test_model_manager.py::TestModelManager::test_preprocess_inputs PASSED                                                                                   [ 20%]
+tests/test_model_manager.py::TestModelManager::test_postprocess_output PASSED                                                                                  [ 26%]
+tests/test_model_manager.py::TestModelManager::test_inpainting PASSED                                                                                          [ 33%]
+tests/test_model_manager.py::TestModelManager::test_available_models PASSED                                                                                    [ 40%]
+tests/test_model_manager.py::TestModelManager::test_model_info PASSED                                                                                          [ 46%]
+tests/test_model_manager.py::TestModelManager::test_invalid_model_name PASSED                                                                                  [ 53%]
+tests/test_model_manager.py::TestModelManager::test_invalid_input_shapes PASSED                                                                                [ 60%]
+tests/test_model_manager.py::TestModelManager::test_device_handling PASSED                                                                                     [ 66%]
+tests/test_model_manager.py::TestModelManager::test_model_consistency PASSED                                                                                   [ 73%]
+tests/test_model_manager.py::TestModelManager::test_batch_processing PASSED                                                                                    [ 80%]
+tests/test_model_manager.py::TestModelManager::test_memory_efficiency PASSED                                                                                   [ 86%]
+tests/test_model_manager.py::TestModelManager::test_error_handling PASSED                                                                                      [ 93%]
+tests/test_model_manager.py::TestModelManager::test_output_validation PASSED                                                                                   [100%]
+
+========================================================================= warnings summary ========================================================================== 
+.venv\Lib\site-packages\streamlit\elements\image.py:22
+  D:\Inpainting_tool2\.venv\Lib\site-packages\streamlit\elements\image.py:22: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13        
+    import imghdr
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================================================== 15 passed, 1 warning in 29.29s ===================================================================
+
+
+Output of test_pconv.py 
+-----------------------------
+
+PS D:\Inpainting_tool2> python -m pytest tests/test_pconv.py        
+======================================================================== test session starts ========================================================================
+platform win32 -- Python 3.11.0, pytest-8.3.3, pluggy-1.5.0 -- D:\Inpainting_tool2\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Inpainting_tool2
+configfile: pytest.ini
+collected 24 items                                                                                                                                                   
+
+tests/test_pconv.py::TestPartialConv2d::test_initialization PASSED                                                                                             [  4%] 
+tests/test_pconv.py::TestPartialConv2d::test_forward_pass PASSED                                                                                               [  8%]
+tests/test_pconv.py::TestPartialConv2d::test_mask_update PASSED                                                                                                [ 12%]
+tests/test_pconv.py::TestPartialConv2d::test_multi_channel_mask PASSED                                                                                         [ 16%]
+tests/test_pconv.py::TestPConvLoss::test_initialization PASSED                                                                                                 [ 20%]
+tests/test_pconv.py::TestPConvLoss::test_loss_computation PASSED                                                                                               [ 25%]
+tests/test_pconv.py::TestPConvLoss::test_valid_hole_loss PASSED                                                                                                [ 29%]
+tests/test_pconv.py::TestPConvLoss::test_perceptual_loss PASSED                                                                                                [ 33%]
+tests/test_pconv.py::TestPConvLoss::test_style_loss PASSED                                                                                                     [ 37%]
+tests/test_pconv.py::TestPConvLoss::test_total_variation_loss PASSED                                                                                           [ 41%]
+tests/test_pconv.py::TestPConvLoss::test_loss_weights PASSED                                                                                                   [ 45%]
+tests/test_pconv.py::TestPConvLoss::test_gradients PASSED                                                                                                      [ 50%]
+tests/test_pconv.py::TestVGGFeatureExtractor::test_initialization PASSED                                                                                       [ 54%]
+tests/test_pconv.py::TestVGGFeatureExtractor::test_feature_extraction PASSED                                                                                   [ 58%]
+tests/test_pconv.py::TestVGGFeatureExtractor::test_gram_matrix PASSED                                                                                          [ 62%]
+tests/test_pconv.py::TestVGGFeatureExtractor::test_gram_matrix_batch PASSED                                                                                    [ 66%] 
+tests/test_pconv.py::TestVGGFeatureExtractor::test_gram_matrix_values PASSED                                                                                   [ 70%] 
+tests/test_pconv.py::TestVGGFeatureExtractor::test_layer_selection PASSED                                                                                      [ 75%]
+tests/test_pconv.py::TestVGGFeatureExtractor::test_normalization PASSED                                                                                        [ 79%] 
+tests/test_pconv.py::TestPConvUNet::test_initialization PASSED                                                                                                 [ 83%]
+tests/test_pconv.py::TestPConvUNet::test_forward_pass PASSED                                                                                                   [ 87%]
+tests/test_pconv.py::TestPConvUNet::test_skip_connections PASSED                                                                                               [ 91%]
+tests/test_pconv.py::TestPConvUNet::test_mask_propagation PASSED                                                                                               [ 95%]
+tests/test_pconv.py::TestPConvUNet::test_upsampling PASSED                                                                                                     [100%]
+
+========================================================================= warnings summary ========================================================================== 
+.venv\Lib\site-packages\streamlit\elements\image.py:22
+  D:\Inpainting_tool2\.venv\Lib\site-packages\streamlit\elements\image.py:22: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13        
+    import imghdr
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================================================== 24 passed, 1 warning in 16.67s =================================================================== 
+
+
+
+Output of test_weight_loader.py 
+-----------------------------
+
+PS D:\Inpainting_tool2> python -m pytest tests/test_weight_loader.py
+======================================================================== test session starts ========================================================================
+platform win32 -- Python 3.11.0, pytest-8.3.3, pluggy-1.5.0 -- D:\Inpainting_tool2\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Inpainting_tool2
+configfile: pytest.ini
+collected 13 items                                                                                                                                                   
+
+tests/test_weight_loader.py::TestWeightLoader::test_initialization PASSED                                                                                      [  7%] 
+tests/test_weight_loader.py::TestWeightLoader::test_config_loading PASSED                                                                                      [ 15%]
+tests/test_weight_loader.py::TestWeightLoader::test_invalid_config_path PASSED                                                                                 [ 23%] 
+tests/test_weight_loader.py::TestWeightLoader::test_device_selection PASSED                                                                                    [ 30%] 
+tests/test_weight_loader.py::TestWeightLoader::test_checkpoint_logging PASSED                                                                                  [ 38%]
+tests/test_weight_loader.py::TestWeightLoader::test_load_model_weights PASSED                                                                                  [ 46%] 
+tests/test_weight_loader.py::TestWeightLoader::test_load_vgg_weights PASSED                                                                                    [ 53%] 
+tests/test_weight_loader.py::TestWeightLoader::test_dataparallel_handling PASSED                                                                               [ 61%]
+tests/test_weight_loader.py::TestWeightLoader::test_missing_weight_files PASSED                                                                                [ 69%] 
+tests/test_weight_loader.py::TestWeightLoader::test_corrupt_weight_file PASSED                                                                                 [ 76%] 
+tests/test_weight_loader.py::TestWeightLoader::test_device_mapping PASSED                                                                                      [ 84%]
+tests/test_weight_loader.py::TestWeightLoader::test_partial_state_dict PASSED                                                                                  [ 92%] 
+tests/test_weight_loader.py::TestWeightLoader::test_memory_efficiency PASSED                                                                                   [100%]
+
+========================================================================= warnings summary ========================================================================== 
+.venv\Lib\site-packages\streamlit\elements\image.py:22
+  D:\Inpainting_tool2\.venv\Lib\site-packages\streamlit\elements\image.py:22: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13        
+    import imghdr
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================================================== 13 passed, 1 warning in 3.64s =================================================================== 
+
+
+
+
+
+
+

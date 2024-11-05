@@ -82,6 +82,10 @@ class InpaintingDataset(Dataset):
                     processed_image = Image.fromarray(
                         (processed_image.transpose(1, 2, 0) * 255).astype(np.uint8)
                     )
+
+                # Add random seed based on time to ensure different random states
+                import time
+                torch.manual_seed(int(time.time() * 1000000) % (2**32))
                 # Apply transform without fixing seed for randomness
                 processed_image = self.transform(processed_image)
 
