@@ -126,6 +126,7 @@ INPAINTING_TOOL2
 │── tests
 │   |── __pycache__
 │   ├── __init__.py
+│   ├── Output_of_seven_tests.txt
 |   |── run_tests.py
 │   ├── test_config.py
 │   ├── test_data_loader.py
@@ -147,11 +148,11 @@ INPAINTING_TOOL2
 ├── .python-version
 ├── config.yaml
 ├── dataset.txt
+├── goal_of_the_project.txt
+├── imp_stuff.txt
 ├── pytest.ini
 ├── README.md
 ├── setup.sh
 └── structure.txt 
 
-goal of the model 
-The model should now generate plausible content for the masked areas while preserving the surrounding context.
 -----------------------------------------xx-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
