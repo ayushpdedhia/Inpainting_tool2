@@ -531,3 +531,36 @@ tests/test_weight_loader.py::TestWeightLoader::test_memory_efficiency PASSED    
 ----------------------------------------------------------------------------------------------------------------xx----------------------------------------------------------------------------------------------------------------
 
 
+PS D:\Inpainting_tool2> python -m pytest tests/test_data_loader.py
+========================================================================= test session starts =========================================================================
+platform win32 -- Python 3.11.0, pytest-8.3.3, pluggy-1.5.0 -- D:\Inpainting_tool2\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Inpainting_tool2
+configfile: pytest.ini
+collected 15 items                                                                                                                                                      
+
+tests/test_data_loader.py::TestDataLoader::test_dataset_initialization PASSED                                                                                    [  6%] 
+tests/test_data_loader.py::TestDataLoader::test_dataset_without_masks PASSED                                                                                     [ 13%] 
+tests/test_data_loader.py::TestDataLoader::test_dataset_with_transform PASSED                                                                                    [ 20%] 
+tests/test_data_loader.py::TestDataLoader::test_dataset_item_loading PASSED                                                                                      [ 26%] 
+tests/test_data_loader.py::TestDataLoader::test_invalid_image_dir PASSED                                                                                         [ 33%] 
+tests/test_data_loader.py::TestDataLoader::test_empty_image_dir PASSED                                                                                           [ 40%] 
+tests/test_data_loader.py::TestDataLoader::test_custom_image_size PASSED                                                                                         [ 46%] 
+tests/test_data_loader.py::TestDataLoader::test_invalid_image_files PASSED                                                                                       [ 53%] 
+tests/test_data_loader.py::TestDataLoader::test_data_loader_creation PASSED                                                                                      [ 60%]
+tests/test_data_loader.py::TestDataLoader::test_custom_data_loader_params PASSED                                                                                 [ 66%]
+tests/test_data_loader.py::TestDataLoader::test_mask_cycling PASSED                                                                                              [ 73%]
+tests/test_data_loader.py::TestDataLoader::test_transform_consistency PASSED                                                                                     [ 80%]
+tests/test_data_loader.py::TestDataLoader::test_memory_management PASSED                                                                                         [ 86%]
+tests/test_data_loader.py::TestDataLoader::test_file_extensions PASSED                                                                                           [ 93%]
+tests/test_data_loader.py::TestDataLoader::test_concurrent_loading PASSED                                                                                        [100%]
+
+========================================================================== warnings summary ===========================================================================
+.venv\Lib\site-packages\streamlit\elements\image.py:22
+  D:\Inpainting_tool2\.venv\Lib\site-packages\streamlit\elements\image.py:22: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13
+    import imghdr
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================================================== 15 passed, 1 warning in 27.93s ====================================================================
+----------------------------------------------------------------------------------------------------------------xx----------------------------------------------------------------------------------------------------------------
+

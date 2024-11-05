@@ -8,7 +8,7 @@ from PIL import Image
 import logging
 import torch
 from torch.utils.data import Dataset, DataLoader
-from pathlib import Path  # Add this import
+from pathlib import Path
 from .mask_generator import MaskGenerator
 from .image_processor import ImageProcessor, ProcessingConfig
 
@@ -19,7 +19,8 @@ class InpaintingDataset(Dataset):
                  image_dir: str,
                  mask_dir: Optional[str] = None,
                  image_size: Tuple[int, int] = (512, 512),
-                 transform=None):
+                 transform=None,
+                 image_type: str = None):  # Added image_type parameter
         if not os.path.exists(image_dir):
             raise FileNotFoundError(f"Image directory {image_dir} not found")
             
@@ -32,8 +33,8 @@ class InpaintingDataset(Dataset):
         self.image_processor = ImageProcessor(ProcessingConfig(target_size=image_size))
         self.mask_generator = MaskGenerator(height=image_size[0], width=image_size[1]) if mask_dir is None else None
         
-        # Get image files
-        self.image_files = self._get_files(image_dir)
+        # Get image files with image type filtering
+        self.image_files = self._get_files(image_dir, image_type)
         self.mask_files = self._get_files(mask_dir) if mask_dir else None
         
         logger.info(f"Found {len(self.image_files)} images in {image_dir}")
@@ -45,7 +46,7 @@ class InpaintingDataset(Dataset):
 
     def __getitem__(self, idx: int) -> dict:
         if idx >= len(self.image_files):
-            raise IndexError(f"Index {idx} out of range for dataset with {len(self.image_files)} images")
+            raise IndexError(f"Index {idx} out of range")
 
         try:
             # Load and verify image
@@ -55,8 +56,8 @@ class InpaintingDataset(Dataset):
 
             try:
                 image = Image.open(image_path)
-                image.verify()  # Verify image integrity
-                image = Image.open(image_path).convert('RGB')  # Reopen for actual use
+                image.verify()  # This will raise an exception for invalid files
+                image = Image.open(image_path).convert('RGB')
             except Exception as e:
                 raise Exception(f"Invalid image file {image_path}: {str(e)}")
 
@@ -72,7 +73,7 @@ class InpaintingDataset(Dataset):
             # Process image and mask
             processed_image, processed_mask = self.image_processor.preprocess(image, mask)
 
-            # Handle transform
+            # Handle transform without deterministic seeding
             if self.transform is not None:
                 if isinstance(processed_image, np.ndarray):
                     if len(processed_image.shape) == 4:
@@ -81,8 +82,7 @@ class InpaintingDataset(Dataset):
                     processed_image = Image.fromarray(
                         (processed_image.transpose(1, 2, 0) * 255).astype(np.uint8)
                     )
-                # Set random seed based on index to ensure different transforms
-                torch.manual_seed(idx)
+                # Apply transform without fixing seed for randomness
                 processed_image = self.transform(processed_image)
 
             return {
@@ -95,9 +95,10 @@ class InpaintingDataset(Dataset):
             logger.error(f"Error loading item at index {idx}: {str(e)}")
             raise
 
+
     @staticmethod
-    def _get_files(directory: str) -> List[str]:
-        """Get list of files in directory with image extensions"""
+    def _get_files(directory: str, image_type: str = None) -> List[str]:
+        """Get list of files in directory with image extensions and optional type filtering"""
         if not directory or not os.path.exists(directory):
             return []
         
@@ -107,11 +108,14 @@ class InpaintingDataset(Dataset):
         for f in sorted(os.listdir(directory)):
             ext = os.path.splitext(f)[1].lower()
             if ext in valid_extensions:
-                files.append(os.path.join(directory, f))
+                if image_type:
+                    if image_type in f:  # Only include files matching the type
+                        files.append(os.path.join(directory, f))
+                else:
+                    files.append(os.path.join(directory, f))
                 
         # Sort files to ensure consistent ordering
         files.sort()
-        
         return files
 
 def get_data_loader(image_dir: str,
@@ -119,13 +123,15 @@ def get_data_loader(image_dir: str,
                    batch_size: int = 8,
                    image_size: Tuple[int, int] = (512, 512),
                    num_workers: int = 4,
-                   shuffle: bool = True) -> DataLoader:
+                   shuffle: bool = True,
+                   image_type: str = None) -> DataLoader:
     """Create data loader for training/validation"""
     
     dataset = InpaintingDataset(
         image_dir=image_dir,
         mask_dir=mask_dir,
-        image_size=image_size
+        image_size=image_size,
+        image_type=image_type  # Added image_type parameter
     )
     
     loader = DataLoader(

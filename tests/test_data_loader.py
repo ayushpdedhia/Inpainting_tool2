@@ -80,17 +80,37 @@ class TestDataLoader:
 
     def test_dataset_initialization(self, temp_data_dir):
         """Test basic dataset initialization"""
-        dataset = InpaintingDataset(
+        # Test dataset with test images only
+        dataset_test = InpaintingDataset(
+            image_dir=temp_data_dir['images'],
+            mask_dir=temp_data_dir['masks'],
+            image_type='test'  # This will filter for test_image_* files
+        )
+        
+        # Verify test dataset properties
+        assert len(dataset_test) == 5  # Should find 5 test images
+        assert dataset_test.image_size == (512, 512)
+        assert dataset_test.transform is None
+        assert dataset_test.mask_dir is not None
+        assert len(dataset_test.image_files) == 5  # 5 test images
+        assert len(dataset_test.mask_files) == 6  # 6 mask files (corner, edge, large, small, thick, thin)
+
+        # Additional verification for validation images
+        dataset_val = InpaintingDataset(
+            image_dir=temp_data_dir['images'],
+            mask_dir=temp_data_dir['masks'],
+            image_type='val'  # This will filter for val_image_* files
+        )
+        assert len(dataset_val) == 5  # Should find 5 validation images
+        assert len(dataset_val.image_files) == 5  # 5 validation images
+        
+        # Test with no image_type (should get all images)
+        dataset_all = InpaintingDataset(
             image_dir=temp_data_dir['images'],
             mask_dir=temp_data_dir['masks']
         )
-        
-        assert len(dataset) == 5  # Number of test images
-        assert dataset.image_size == (512, 512)
-        assert dataset.transform is None
-        assert dataset.mask_dir is not None
-        assert len(dataset.image_files) == 5
-        assert len(dataset.mask_files) == 3
+        assert len(dataset_all) == 10  # Should find all 10 images
+        assert len(dataset_all.image_files) == 10  # All 10 images
 
     def test_dataset_without_masks(self, temp_data_dir):
         """Test dataset initialization without mask directory"""
@@ -178,15 +198,27 @@ class TestDataLoader:
         # Create invalid image file
         invalid_path = Path(temp_data_dir['images']) / 'invalid.jpg'
         invalid_path.write_text('not an image')
-        
+
+        # Verify that the file exists
+        assert invalid_path.exists(), f"File {invalid_path} was not created."
+
         dataset = InpaintingDataset(
             image_dir=temp_data_dir['images'],
             mask_dir=temp_data_dir['masks']
         )
-        
-        # Should skip invalid file
+
+        # Verify that 'invalid.jpg' is in the dataset's image files
+        invalid_file_str = str(invalid_path)
+        assert invalid_file_str in dataset.image_files, \
+            f"'invalid.jpg' not found in dataset image files: {dataset.image_files}"
+
+        # Find the index of the invalid image
+        invalid_index = dataset.image_files.index(invalid_file_str)
+
+        # Should raise Exception when accessing invalid image
         with pytest.raises(Exception):
-            _ = dataset[len(dataset.image_files) - 1]
+            _ = dataset[invalid_index]
+
 
     def test_data_loader_creation(self, temp_data_dir):
         """Test data loader creation and functionality"""
