@@ -1,4 +1,5 @@
 # tests/test_weight_loader.py
+# python -m pytest tests/test_weight_loader.py 
 
 import pytest
 import torch
@@ -64,25 +65,25 @@ class TestWeightLoader:
         return config_path
 
     @pytest.fixture
-    def mock_state_dict(self):
+    def mock_state_dict(self, weight_loader):
         """Fixture providing mock state dictionary"""
         return OrderedDict([
-            ('conv1.weight', torch.randn(64, 3, 3, 3)),
-            ('conv1.bias', torch.randn(64)),
-            ('bn1.weight', torch.randn(64)),
-            ('bn1.bias', torch.randn(64)),
-            ('bn1.running_mean', torch.randn(64)),
-            ('bn1.running_var', torch.randn(64))
+            ('conv1.weight', torch.randn(64, 3, 3, 3).to(weight_loader.device)),
+            ('conv1.bias', torch.randn(64).to(weight_loader.device)),
+            ('bn1.weight', torch.randn(64).to(weight_loader.device)),
+            ('bn1.bias', torch.randn(64).to(weight_loader.device)),
+            ('bn1.running_mean', torch.randn(64).to(weight_loader.device)),
+            ('bn1.running_var', torch.randn(64).to(weight_loader.device))
         ])
 
     @pytest.fixture
-    def mock_vgg_state_dict(self):
+    def mock_vgg_state_dict(self, weight_loader):
         """Fixture providing mock VGG state dictionary"""
         return OrderedDict([
-            ('features.0.weight', torch.randn(64, 3, 3, 3)),
-            ('features.0.bias', torch.randn(64)),
-            ('features.2.weight', torch.randn(64, 64, 3, 3)),
-            ('features.2.bias', torch.randn(64))
+            ('features.0.weight', torch.randn(64, 3, 3, 3).to(weight_loader.device)),
+            ('features.0.bias', torch.randn(64).to(weight_loader.device)),
+            ('features.2.weight', torch.randn(64, 64, 3, 3).to(weight_loader.device)),
+            ('features.2.bias', torch.randn(64).to(weight_loader.device))
         ])
 
     @pytest.fixture
@@ -220,7 +221,7 @@ class TestWeightLoader:
 
     def test_device_mapping(self, weight_loader, mock_state_dict, tmp_path):
         """Test weight loading with different devices"""
-        model = MockModel()
+        model = MockModel().to(weight_loader.device)
         
         # Save weights
         weights_path = tmp_path / "weights.pth"
@@ -231,7 +232,10 @@ class TestWeightLoader:
         model = weight_loader.load_model_weights(model)
         
         # Verify model is on correct device
-        assert next(model.parameters()).device == weight_loader.device
+        model_device = next(model.parameters()).device
+        assert model_device.type == weight_loader.device.type
+        if weight_loader.device.type == 'cuda':
+            assert model_device.index == weight_loader.device.index
 
     def test_partial_state_dict(self, weight_loader, mock_state_dict, tmp_path):
         """Test loading partial state dict"""

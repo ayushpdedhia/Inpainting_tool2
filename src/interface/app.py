@@ -28,29 +28,26 @@ class InpaintingApp:
             return yaml.safe_load(f)
     
     @st.cache_resource
-    def initialize_model(_self) -> ModelManager:  # Changed 'self' to '_self'
+    def initialize_model(_self) -> ModelManager:
         """Initialize the model manager with proper error handling"""
         try:
-            model_manager = ModelManager()
+            # Get config path 
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            config_path = os.path.join(current_dir, '..', '..', 'config.yaml')
+            
+            # Create model manager - this will load models automatically
+            model_manager = ModelManager(config_path)
 
             # Add device selection based on config
-            device = _self.config['model']['device']  # Use _self instead of self
+            device = _self.config['model']['device']
             st.write(f"Using device: {device}")
             
-            # Load model weights
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            weights_dir = os.path.join(current_dir, '..', '..', 'weights')
-            
-            # Verify weights directory exists
-            if not os.path.exists(weights_dir):
-                raise FileNotFoundError(f"Weights directory not found at {weights_dir}")
-            
-            # Initialize model
-            model_manager.initialize()
+            # No need to verify weights directory or call initialize()
+            # as ModelManager constructor handles all of this
             return model_manager
-            
+                
         except Exception as e:
-            _self.ui.show_error(e)  # Use _self instead of self
+            _self.ui.show_error(e)
             return None
 
     def process_image(self, image: Image.Image, mask: np.ndarray, model_name: str) -> Image.Image:
