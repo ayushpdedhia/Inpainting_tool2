@@ -11,6 +11,7 @@ D:\Inpainting_tool2\config.yaml
 D:\Inpainting_tool2\src\utils\data_loader.py
 D:\Inpainting_tool2\src\utils\image_processor.py
 D:\Inpainting_tool2\src\utils\mask_generator.py
+D:\Inpainting_tool2\src\utils\weight_loader.py
 D:\Inpainting_tool2\src\core\model_manager.py
 D:\Inpainting_tool2\src\models\pconv\layers\partialconv2d.py
 D:\Inpainting_tool2\src\models\pconv\models\pconv_unet.py

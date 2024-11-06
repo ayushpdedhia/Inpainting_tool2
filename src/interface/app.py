@@ -1,13 +1,15 @@
 # src/interface/app.py
+# cd D:\Inpainting_tool2
+# python -m streamlit run src/interface/app.py
 import streamlit as st
 from PIL import Image
 import os
 import numpy as np
 
-from .components.ui_components import UIComponents
-from .components.canvas_handler import CanvasHandler
-from ..core.model_manager import ModelManager
-from ..utils.image_processor import ImageProcessor
+from src.interface.components.ui_components import UIComponents
+from src.interface.components.canvas_handler import CanvasHandler
+from src.core.model_manager import ModelManager
+from src.utils.image_processor import ImageProcessor
 
 class InpaintingApp:
     def __init__(self):

@@ -155,6 +155,33 @@ D:\Inpainting_tool2\src\models\pconv\vgg_extractor.py
 D:\Inpainting_tool2\src\models\pconv\loss.py
 D:\Inpainting_tool2\src\utils\mask_generator.py
 
+When i run app.py , D:\Inpainting_tool2\src\interface\app.py
+it is connected to 
+D:\Inpainting_tool2\src\interface\components\canvas_handler.py
+D:\Inpainting_tool2\src\interface\components\ui_components.py
+D:\Inpainting_tool2\src\utils\image_processor.py
+D:\Inpainting_tool2\src\core\model_manager.py
+
+canvas_handler.py is connected to
+D:\Inpainting_tool2\src\utils\mask_generator.py
+
+
+Now model_manager.py is connected to 
+D:\Inpainting_tool2\src\utils\weight_loader.py
+D:\Inpainting_tool2\src\utils\data_loader.py
+D:\Inpainting_tool2\src\models\pconv\models\pconv_unet.py
+D:\Inpainting_tool2\src\models\pconv\loss.py
+
+data_loader.py is connected to 
+D:\Inpainting_tool2\src\utils\image_processor.py
+D:\Inpainting_tool2\src\utils\mask_generator.py
+
+loss.py is connected to
+D:\Inpainting_tool2\src\models\pconv\vgg_extractor.py
+
+
+pconv_unet.py is conected to
+D:\Inpainting_tool2\src\models\pconv\layers\partialconv2d.py
 
 REFERNCES USED FOR PROJECT 
 https://github.com/NVIDIA/partialconv
