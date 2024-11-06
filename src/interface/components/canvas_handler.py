@@ -197,37 +197,68 @@ class CanvasHandler:
         mask_valid = False
         process_clicked = False
 
-        # Handle mask selection
-        if ('using_random_mask' in st.session_state and 
-            st.session_state.using_random_mask and 
-            hasattr(self, '_last_generated_mask')):
-            print("Using random mask")
-            mask = self._last_generated_mask
-        elif canvas_result is not None and canvas_result.image_data is not None:
-            print("Using canvas mask")
+        # Initialize mask storage
+        if 'manual_mask' not in st.session_state:
+            st.session_state.manual_mask = np.zeros((self.canvas_size, self.canvas_size), dtype=np.uint8)
+
+        # Handle manual mask drawing (rect or freedraw)
+        if canvas_result is not None and canvas_result.image_data is not None:
+            print("Processing canvas input")
             if controls['drawing_mode'] == "freedraw":
-                mask = canvas_result.image_data[:, :, -1]
+                st.session_state.manual_mask = canvas_result.image_data[:, :, -1]
             elif controls['drawing_mode'] == "rect" and canvas_result.json_data is not None:
-                mask = np.zeros((self.canvas_size, self.canvas_size), dtype=np.uint8)
+                st.session_state.manual_mask = np.zeros((self.canvas_size, self.canvas_size), dtype=np.uint8)
                 for obj in canvas_result.json_data.get("objects", []):
                     if obj["type"] == "rect":
                         x = int(obj["left"])
                         y = int(obj["top"])
                         w = int(obj["width"])
                         h = int(obj["height"])
-                        cv2.rectangle(mask, (x, y), (x+w, y+h), 255, -1)
-        
+                        cv2.rectangle(st.session_state.manual_mask, (x, y), (x+w, y+h), 255, -1)
+
+        # Combine manual and random masks
+        mask = st.session_state.manual_mask.copy()
+
+        if ('using_random_mask' in st.session_state and 
+            st.session_state.using_random_mask and 
+            hasattr(self, '_last_generated_mask')):
+            print("Combining with random mask")
+            # Convert random mask to proper format
+            random_mask = (self._last_generated_mask * 255).astype(np.uint8)
+            
+            # Print debug information
+            print(f"Random mask shape: {random_mask.shape}")
+            print(f"Random mask min/max: {random_mask.min()}, {random_mask.max()}")
+            print(f"Manual mask shape: {mask.shape}")
+            print(f"Manual mask min/max: {mask.min()}, {mask.max()}")
+            
+            # Combine masks using bitwise OR
+            mask = cv2.bitwise_or(mask, random_mask)
+            print(f"Combined mask min/max: {mask.min()}, {mask.max()}")
+
         if mask is not None:
             print(f"Final mask shape: {mask.shape}")
             print(f"Final mask min/max values: {mask.min()}, {mask.max()}")
-        
+
         mask_valid = validate_mask(mask) if mask is not None else False
-        
+
         # Extracted mask preview (bottom left)
         with col3:
             st.subheader("Extracted Mask")
             if mask is not None:
-                st.image(mask, width=self.canvas_size)
+                # Ensure mask is properly normalized for display
+                display_mask = mask.astype(np.uint8)
+                st.image(display_mask, width=self.canvas_size, caption="Combined Mask")
+                
+                # Debug display of individual masks
+                if st.checkbox("Show Individual Masks"):
+                    col3a, col3b = st.columns(2)
+                    with col3a:
+                        st.image(st.session_state.manual_mask, caption="Manual Mask")
+                    with col3b:
+                        if hasattr(self, '_last_generated_mask'):
+                            random_display = (self._last_generated_mask * 255).astype(np.uint8)
+                            st.image(random_display, caption="Random Mask")
         
         # Inpainting result placeholder (bottom right)
         with col4:

@@ -78,3 +78,119 @@ or are these connections enough
 and also give me a 2 line summary of the above mentioned file so that i know u have read them 
 and tell me if they need any improvements 
 
+------------------------------------------------------------------------------------------------
+WHEN ERRROR OCCURS (upload the error , output_of_Seven_tests, structure_of_codebase.txt ,goal_and_context_of_the_project )
+
+When i clicked the process image button it showed me the following error The detailed error is also uploaded in the file above 
+
+Error: 
+Cannot hash argument 'self' (of type `__main__.InpaintingApp`) in 'initialize_model'. 
+To address this, you can tell Streamlit not to hash this argument by adding a leading underscore to the argument's name in the function signature: 
+@st.cache_resource 
+
+        def initialize_model(_self, ...): ... 
+
+I want you to solve the error
+Now I want you to know the following things before solving the error 
+I feel the following context will help you solve the error much faster and in a efficient way 
+
+
+Context about the connection of the codebase 
+When i run app.py , D:\Inpainting_tool2\src\interface\app.py 
+it is connected to 
+D:\Inpainting_tool2\src\interface\components\canvas_handler.py 
+D:\Inpainting_tool2\src\interface\components\ui_components.py 
+D:\Inpainting_tool2\src\utils\image_processor.py 
+D:\Inpainting_tool2\src\core\model_manager.py 
+
+canvas_handler.py is connected to 
+D:\Inpainting_tool2\src\utils\mask_generator.py 
+
+Now model_manager.py is connected to 
+D:\Inpainting_tool2\src\utils\weight_loader.py 
+D:\Inpainting_tool2\src\utils\data_loader.py 
+D:\Inpainting_tool2\src\models\pconv\models\pconv_unet.py 
+D:\Inpainting_tool2\src\models\pconv\loss.py 
+
+data_loader.py is connected to 
+D:\Inpainting_tool2\src\utils\image_processor.py 
+D:\Inpainting_tool2\src\utils\mask_generator.py 
+
+loss.py is connected to 
+D:\Inpainting_tool2\src\models\pconv\vgg_extractor.py 
+
+pconv_unet.py is conected to 
+D:\Inpainting_tool2\src\models\pconv\layers\partialconv2d.py 
+
+All the above mentioned files are uploaded in the knowledge content 
+read them carefully 
+
+Context about pretrained weights:
+Now the code must use the pre-trained weights saved in the below paths mentioned 
+D:\Inpainting_tool2\weights\pconv\unet\model_weights.pth
+D:\Inpainting_tool2\weights\pconv\vgg16\pdvgg16_bn_model_best.pth.tar
+D:\Inpainting_tool2\weights\pconv\vgg16\vgg16_weights.pth
+
+the above weight D:\Inpainting_tool2\weights\pconv\vgg16\pdvgg16_bn_model_best.pth.tar is downloaded from the README.md file of the following git repository 
+https://github.com/NVIDIA/partialconv
+From the above git repository i got the following link in its README.md 
+
+### Pretrained checkpoints (weights) for VGG and ResNet networks with partial convolution based padding:
+https://www.dropbox.com/sh/t6flbuoipyzqid8/AACJ8rtrF6V5b9348aG5PIhia?dl=0
+
+the other 2 weights were converted from the below .h5 files 
+D:\Inpainting_tool2\temp_weights\pconv_imagenet.h5
+D:\Inpainting_tool2\temp_weights\pytorch_to_keras_vgg16.h5
+
+I got the above weights from a different git repository 
+https://github.com/MathiasGruber/PConv-Keras
+
+I then converted above .h5 files using the below code file
+D:\Inpainting_tool2\scripts\weight_conversion\convert_weights.py
+D:\Inpainting_tool2\scripts\weight_conversion\converter.py
+
+I then verified the converted weights using the below code file
+D:\Inpainting_tool2\scripts\weight_conversion\verify_weights.py
+
+Output of verified_wieghts.py 
+Great! All verifications have passed successfully:
+Original H5 File: ✓
+Successfully verified the source H5 file structure
+All layers and weights present
+File size: 128571.11 KB
+
+UNet Weights: ✓
+Successfully converted and verified
+All encoder and decoder layers present
+All BatchNorm layers properly initialized
+File size: 128405.02 KB
+Number of layers: 76
+
+VGG Weights: ✓
+Successfully verified the NVIDIA VGG weights
+All expected layers present with correct module structure
+File size: 540552.17 KB
+Number of layers: 84
+
+Context about tests conducted: 
+i ran the 7 test files one by one 
+│   ├── test_config.py
+│   ├── test_data_loader.py
+│   ├── test_image_processor.py
+│   ├── test_mask_generator.py
+│   ├── test_model_manager.py
+│   ├── test_pconv.py
+│   └── test_weight_loader.py 
+
+The output of the above files is uploaded in D:\Inpainting_tool2\tests\Output_of_seven_tests.txt
+Output_of_seven_tests.txt is uploaded in the prompt 
+
+If you want i can also upload the below files 
+test_config.py , test_data_loader.py , test_image_processor.py , test_mask_generator.py , test_model_manager.py , test_pconv.py ,test_weight_loader.py 
+Also read the structure_of_codebase.txt and goal_and_context_of_the_project for better understanding 
+Give me a 4 - 5 line summary of all the texts files 
+
+So before suggesting me any changes in any files to solve the error 
+Give me the names of the files which are related to the error 
+I will upload them and also upload its tests files and its output if available 
+
