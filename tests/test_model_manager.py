@@ -55,7 +55,7 @@ class TestModelManager:
                 'name': 'pconv_unet',
                 'weights_dir': 'weights/pconv',
                 'input_size': [512, 512],
-                'device': 'cpu'
+                'device': 'cuda:0'  # Changed to explicit CUDA device
             },
             'paths': {
                 'data_dir': 'data',
@@ -71,9 +71,12 @@ class TestModelManager:
             }
         }
         
+        # Make sure the config directory exists
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        
         with open(config_path, 'w') as f:
             yaml.dump(config_content, f)
-            
+                
         return config_path
 
     @pytest.fixture
@@ -112,7 +115,17 @@ class TestModelManager:
         # Verify model is loaded correctly
         model = model_manager.models['partial convolutions']
         assert model.training is False  # Should be in eval mode
-        assert next(model.parameters()).device == model_manager.device
+        
+        # Get actual device and expected device
+        model_device = next(model.parameters()).device
+        expected_device = model_manager.device
+        
+        # Compare device types
+        assert model_device.type == expected_device.type
+        
+        # If using CUDA, compare device indices
+        if model_device.type == 'cuda':
+            assert model_device.index == 0  # We explicitly use cuda:0
 
     def test_preprocess_inputs(self, model_manager, test_image, test_mask):
         """Test input preprocessing"""

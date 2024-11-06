@@ -1,4 +1,6 @@
-# tests/test_config.py
+# D:\Inpainting_tool2\tests\test_config.py
+# cd D:\Inpainting_tool2
+# python -m pytest tests/test_config.py
 
 import pytest
 import os

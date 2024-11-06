@@ -1,4 +1,6 @@
-# tests/test_image_processor.py
+# D:\Inpainting_tool2\tests\test_image_processor.py
+# cd D:\Inpainting_tool2
+# python -m pytest tests/test_image_processor.py
 
 import pytest
 import numpy as np

@@ -1,4 +1,6 @@
-# tests/test_data_loader.py
+# D:\Inpainting_tool2\tests\test_data_loader.py
+# cd D:\Inpainting_tool2
+# python -m pytest tests/test_data_loader.py
 
 import pytest
 import os

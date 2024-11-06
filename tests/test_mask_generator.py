@@ -1,3 +1,6 @@
+# D:\Inpainting_tool2\tests\test_mask_generator.py
+# cd D:\Inpainting_tool2
+# python -m pytest tests/test_mask_generator.py
 import pytest
 import numpy as np
 from PIL import Image

@@ -1,4 +1,5 @@
 # tests/test_weight_loader.py
+# cd D:\Inpainting_tool2
 # python -m pytest tests/test_weight_loader.py 
 
 import pytest

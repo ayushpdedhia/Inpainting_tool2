@@ -1,3 +1,6 @@
+# D:\Inpainting_tool2\tests\test_pconv.py
+# cd D:\Inpainting_tool2
+# python -m pytest tests/test_pconv.py     
 import pytest
 import torch
 import numpy as np

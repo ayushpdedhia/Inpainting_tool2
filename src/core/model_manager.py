@@ -24,6 +24,8 @@ class ModelManager:
         self.available_models = {
             'partial convolutions': 'pdvgg16_bn'
         }
+        self.weight_loader = None  # Initialize to None first
+        self.vgg_weights_path = None
         
         # Get config path
         if config_path is None:
@@ -33,17 +35,21 @@ class ModelManager:
         # Initialize weight loader and device
         try:
             self.weight_loader = WeightLoader(config_path)
-            # Use device from config if available
-            self.device = torch.device(self.weight_loader.config['model'].get('device', 'cuda' if torch.cuda.is_available() else 'cpu'))
+            # Use device from config if available, with explicit CUDA device index
+            if self.weight_loader.config['model'].get('device', '').startswith('cuda'):
+                self.device = torch.device('cuda:0')
+            else:
+                self.device = torch.device('cpu')
         except Exception as e:
             print(f"Error initializing WeightLoader: {str(e)}")
-            self.weight_loader = None
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            # Default to CUDA:0 if available
+            self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         
         print(f"Using device: {self.device}")
-        self.vgg_weights_path = None
+        
+        # Load models after everything is initialized
         self.load_models()
-        self.check_gpu_status() 
+        self.check_gpu_status()
 
     def check_gpu_status(self):
         print(f"Current GPU Device: {torch.cuda.current_device()}")
@@ -88,7 +94,7 @@ class ModelManager:
                 weights_path = os.path.join(base_weights_dir, 'unet', 'model_weights.pth')
                 if os.path.exists(weights_path):
                     try:
-                        checkpoint = torch.load(weights_path, map_location=self.device)
+                        checkpoint = torch.load(weights_path, map_location=self.device, weights_only=True)
                         if isinstance(checkpoint, OrderedDict):
                             state_dict = checkpoint
                         else:
