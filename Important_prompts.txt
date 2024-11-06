@@ -40,6 +40,9 @@ D:\Inpainting_tool2\src\interface\components\canvas_handler.py
 D:\Inpainting_tool2\src\interface\components\ui_components.py
 ------------------------------------------------------------------------
 
+Step 1 --> Read the goal_and_context_of_the_project.txt and structure_of_the_codebase.txt which are uploaded in the knowledge content 
+Give me a brief summary of structure_of_the_codebase and a detailed summary of  goal_and_context_of_the_project to check if you understand the goal and the process of the project or not 
+
 When i run app.py , D:\Inpainting_tool2\src\interface\app.py
 it is connected to 
 D:\Inpainting_tool2\src\interface\components\canvas_handler.py
@@ -47,7 +50,7 @@ D:\Inpainting_tool2\src\interface\components\ui_components.py
 D:\Inpainting_tool2\src\utils\image_processor.py
 D:\Inpainting_tool2\src\core\model_manager.py
 
-canvas_handler.py is connected to mask_generator.py
+canvas_handler.py is connected to
 D:\Inpainting_tool2\src\utils\mask_generator.py
 
 

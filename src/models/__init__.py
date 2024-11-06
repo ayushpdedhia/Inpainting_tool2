@@ -1,11 +1,13 @@
+# D:\Inpainting_tool2\src\models\__init__.py
 """
 Model Registry and Management System for Inpainting Models
 """
-from typing import Dict, Type, Optional, Any
+from typing import Dict, Type, Optional, Any, List, Tuple
 from abc import ABC, abstractmethod
 import torch.nn as nn
 import logging
 from packaging import version
+import torch
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,11 @@ class InpaintingModel(ABC):
     def required_inputs(self) -> Dict[str, Any]:
         """Return required input specifications"""
         pass
+    
+    @abstractmethod
+    def get_model_size(self) -> Tuple[int, int]:
+        """Return model size (parameters, buffers)"""
+        pass
 
 class ModelRegistry:
     """
@@ -36,15 +43,17 @@ class ModelRegistry:
     _models: Dict[str, Type[InpaintingModel]] = {}
     _versions: Dict[str, str] = {}
     _compatibility: Dict[str, Dict[str, Any]] = {}
+    _descriptions: Dict[str, str] = {}
 
     @classmethod
-    def register(cls, name: str, version: str, **compatibility):
+    def register(cls, name: str, version: str, description: str = "", **compatibility):
         """
         Decorator to register a model class
         
         Args:
             name: Unique identifier for the model
             version: Model version string
+            description: Short description of the model
             **compatibility: Compatibility requirements (torch_version, cuda_version, etc.)
         """
         def wrapper(model_cls: Type[InpaintingModel]):
@@ -54,6 +63,7 @@ class ModelRegistry:
             cls._models[name] = model_cls
             cls._versions[name] = version
             cls._compatibility[name] = compatibility
+            cls._descriptions[name] = description
             logger.info(f"Successfully registered model: {name} (v{version})")
             return model_cls
         return wrapper
@@ -71,7 +81,8 @@ class ModelRegistry:
             Instance of the requested model or None if not found
         """
         if name not in cls._models:
-            logger.error(f"Model {name} not found in registry")
+            available_models = ", ".join(cls._models.keys())
+            logger.error(f"Model {name} not found. Available models: {available_models}")
             return None
             
         try:
@@ -85,17 +96,26 @@ class ModelRegistry:
             
         except Exception as e:
             logger.error(f"Error creating model {name}: {str(e)}")
-            return None
+            raise
 
     @classmethod
-    def list_models(cls) -> Dict[str, str]:
-        """Return dictionary of registered models and their versions"""
-        return cls._versions.copy()
+    def list_models(cls) -> Dict[str, Dict[str, Any]]:
+        """Return detailed information about registered models"""
+        return {
+            name: {
+                "version": cls._versions[name],
+                "description": cls._descriptions[name],
+                "compatibility": cls._compatibility[name]
+            }
+            for name in cls._models
+        }
 
     @classmethod
     def get_compatibility(cls, name: str) -> Dict[str, Any]:
         """Return compatibility requirements for a model"""
-        return cls._compatibility.get(name, {})
+        if name not in cls._compatibility:
+            raise KeyError(f"Model {name} not found in registry")
+        return cls._compatibility[name].copy()
 
     @classmethod
     def _check_compatibility(cls, name: str):
@@ -104,7 +124,6 @@ class ModelRegistry:
         
         # Check PyTorch version if specified
         if 'torch_version' in compat:
-            import torch
             required = version.parse(compat['torch_version'])
             current = version.parse(torch.__version__.split('+')[0])
             if current < required:
@@ -114,7 +133,10 @@ class ModelRegistry:
                 )
 
         # Check CUDA version if specified
-        if 'cuda_version' in compat and torch.cuda.is_available():
+        if 'cuda_version' in compat:
+            if not torch.cuda.is_available():
+                raise RuntimeError(f"Model {name} requires CUDA but no CUDA device is available")
+            
             current_cuda = torch.version.cuda
             required_cuda = compat['cuda_version']
             if version.parse(current_cuda) < version.parse(required_cuda):
@@ -132,8 +154,10 @@ def register_all_models():
     ModelRegistry.register(
         name="pconv_unet",
         version="1.0.0",
+        description="Partial Convolution based UNet for image inpainting",
         torch_version="2.0.0",
-        cuda_version="11.7"
+        cuda_version="11.7",
+        min_memory_gb=6  # Added minimum memory requirement
     )(PConvUNet)
     
     # Register other models here as they become available
