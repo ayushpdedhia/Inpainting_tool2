@@ -43,6 +43,12 @@ class ModelManager:
         print(f"Using device: {self.device}")
         self.vgg_weights_path = None
         self.load_models()
+        self.check_gpu_status() 
+
+    def check_gpu_status(self):
+        print(f"Current GPU Device: {torch.cuda.current_device()}")
+        print(f"GPU Device Name: {torch.cuda.get_device_name()}")
+        print(f"GPU Memory Usage: {torch.cuda.memory_allocated()/1024**2:.2f} MB")
     
     def load_models(self) -> None:
         """Initialize and load all available models"""
@@ -265,6 +271,7 @@ class ModelManager:
             TypeError: For incorrect input types
             RuntimeError: For model execution errors
         """
+        self.check_gpu_status()
         try:
             # Input validation
             if not isinstance(image, np.ndarray):

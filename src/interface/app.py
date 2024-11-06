@@ -28,13 +28,13 @@ class InpaintingApp:
             return yaml.safe_load(f)
     
     @st.cache_resource
-    def initialize_model(self) -> ModelManager:
+    def initialize_model(_self) -> ModelManager:  # Changed 'self' to '_self'
         """Initialize the model manager with proper error handling"""
         try:
             model_manager = ModelManager()
 
             # Add device selection based on config
-            device = self.config['model']['device']
+            device = _self.config['model']['device']  # Use _self instead of self
             st.write(f"Using device: {device}")
             
             # Load model weights
@@ -50,7 +50,7 @@ class InpaintingApp:
             return model_manager
             
         except Exception as e:
-            self.ui.show_error(e)
+            _self.ui.show_error(e)  # Use _self instead of self
             return None
 
     def process_image(self, image: Image.Image, mask: np.ndarray, model_name: str) -> Image.Image:
