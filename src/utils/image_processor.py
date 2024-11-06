@@ -15,6 +15,7 @@ class ProcessingConfig:
     normalize_range: Tuple[float, float] = (0.0, 1.0)
     mean: Tuple[float, float, float] = (0.485, 0.456, 0.406)  # ImageNet means
     std: Tuple[float, float, float] = (0.229, 0.224, 0.225)   # ImageNet stds
+    max_image_size: int = 1024  # Added max image size parameter
 
 class ImageProcessor:
     def __init__(self, config: Optional[ProcessingConfig] = None):
@@ -140,6 +141,24 @@ class ImageProcessor:
             # OpenCV expects (width, height)
             mask = cv2.resize(mask, (size[1], size[0]), interpolation=cv2.INTER_NEAREST)
         return mask
+    
+    def _validate_processed_outputs(self, image: np.ndarray, mask: np.ndarray):
+        """Validate processed outputs dimensions and values"""
+        if image.shape[-2:] != mask.shape[-2:]:
+            raise ValueError("Image and mask dimensions don't match after processing")
+        
+        # Additional validations
+        if image.dtype != np.float32:
+            raise ValueError(f"Expected float32 image, got {image.dtype}")
+        
+        if mask.dtype != np.float32:
+            raise ValueError(f"Expected float32 mask, got {mask.dtype}")
+        
+        if not (0 <= image.min() and image.max() <= 1):
+            raise ValueError(f"Image values outside [0,1] range: [{image.min()}, {image.max()}]")
+        
+        if not (0 <= mask.min() and mask.max() <= 1):
+            raise ValueError(f"Mask values outside [0,1] range: [{mask.min()}, {mask.max()}]")
 
     def _normalize_image(self, image: np.ndarray) -> np.ndarray:
         """Normalize image values"""

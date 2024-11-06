@@ -13,14 +13,27 @@ class InpaintingApp:
     def __init__(self):
         self.ui = UIComponents()
         self.canvas = CanvasHandler()
+        self.config = self._load_config()
         self.image_processor = ImageProcessor()
-        self.CANVAS_SIZE = 512
+        self.CANVAS_SIZE = self.config['interface']['canvas_size']
+        self.progress_bar = None
+
+    def _load_config(self):
+        """Load configuration file"""
+        config_path = os.path.join(os.path.dirname(__file__), '..', '..', 'config.yaml')
+        with open(config_path, 'r') as f:
+            import yaml
+            return yaml.safe_load(f)
     
     @st.cache_resource
     def initialize_model(self) -> ModelManager:
         """Initialize the model manager with proper error handling"""
         try:
             model_manager = ModelManager()
+
+            # Add device selection based on config
+            device = self.config['model']['device']
+            st.write(f"Using device: {device}")
             
             # Load model weights
             current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -38,31 +51,56 @@ class InpaintingApp:
             self.ui.show_error(e)
             return None
 
-    def process_image(self, image: Image.Image, mask: 'np.ndarray', model_name: str) -> Image.Image:
-        """Process the image using the selected model"""
+    def process_image(self, image: Image.Image, mask: np.ndarray, model_name: str) -> Image.Image:
+        """Process the image using the selected model with progress tracking"""
         try:
-            # Initialize model
+            # Initialize progress tracking
+            self.progress_bar = st.progress(0)
+            st.write("Initializing model...")
+            
+            # Initialize model (20%)
+            self.progress_bar.progress(20)
             model_manager = self.initialize_model()
             if model_manager is None:
+                st.error("Failed to initialize model")
                 return None
 
-            # Preprocess image and mask
-            processed_image, processed_mask = self.image_processor.preprocess(
-                image, 
-                mask, 
-                target_size=(self.CANVAS_SIZE, self.CANVAS_SIZE)
-            )
+            # Preprocess image and mask (40%)
+            st.write("Preprocessing image...")
+            self.progress_bar.progress(40)
+            try:
+                processed_image, processed_mask = self.image_processor.preprocess(
+                    image, 
+                    mask, 
+                    target_size=(self.CANVAS_SIZE, self.CANVAS_SIZE)
+                )
+            except Exception as e:
+                st.error("Error during preprocessing")
+                raise e
 
-            # Run inference
+            # Run inference (60%)
+            st.write("Running inpainting...")
+            self.progress_bar.progress(60)
             result = model_manager.inpaint(processed_image, processed_mask, model_name)
             
-            # Post-process result
-            final_image = self.image_processor.postprocess(result)
-            return final_image
+            # Post-process result (80%)
+            st.write("Postprocessing result...")
+            self.progress_bar.progress(80)
+            if result is not None:
+                final_image = self.image_processor.postprocess(result)
+                self.progress_bar.progress(100)
+                st.write("Processing complete!")
+                return final_image
+            else:
+                raise ValueError("Model returned None result")
 
         except Exception as e:
             self.ui.show_error(e)
             return None
+        finally:
+            # Clean up progress bar
+            if hasattr(self, 'progress_bar') and self.progress_bar is not None:
+                self.progress_bar.empty()
 
     def run(self):
         """Run the Streamlit application"""

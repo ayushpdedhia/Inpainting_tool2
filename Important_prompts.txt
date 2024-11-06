@@ -1,0 +1,45 @@
+Step 1 --> Read the goal_and_context_of_the_project.txt and structure_of_the_codebase.txt which are uploaded in the knowledge content 
+Give me a brief summary of structure_of_the_codebase and a detailed summary of  goal_and_context_of_the_project to check if you understand the goal and the process of the project or not 
+
+Step 2 --> read the 7 code files named 
+test_config.py , test_data_loader.py , test_image_processor.py , test_mask_generator.py , test_model_manager.py , test_pconv.py ,test_weight_loader.py 
+and also read the text file named output_of_seven_tests where the complete output of 7 tests is mentioned 
+Give me a short 2 line summary of each code file and a brief summary of their output
+
+Step 3 --> read the the files the above 7 files are used to test 
+D:\Inpainting_tool2\config.yaml
+D:\Inpainting_tool2\src\utils\data_loader.py
+D:\Inpainting_tool2\src\utils\image_processor.py
+D:\Inpainting_tool2\src\utils\mask_generator.py
+D:\Inpainting_tool2\src\core\model_manager.py
+D:\Inpainting_tool2\src\models\pconv\layers\partialconv2d.py
+D:\Inpainting_tool2\src\models\pconv\models\pconv_unet.py
+D:\Inpainting_tool2\src\models\pconv\vgg_extractor.py
+D:\Inpainting_tool2\src\models\pconv\loss.py
+D:\Inpainting_tool2\src\utils\mask_generator.py
+
+Give me a 2 line summary of the above files 
+
+Step 4 --> Read the below files to understand the test_samples 
+D:\Inpainting_tool2\src\utils\manage_test_data.py , 
+D:\Inpainting_tool2\src\utils\organize_test_data.py , 
+D:\Inpainting_tool2\src\utils\rename_test_files.py
+
+Give me a 2 line summary of the above files 
+
+Step 5 --> Read the below files to understand weights and its conversion 
+ D:\Inpainting_tool2\scripts\weight_conversion\convert_weights.py 
+ D:\Inpainting_tool2\scripts\weight_conversion\converter.py  
+ D:\Inpainting_tool2\scripts\weight_conversion\verify_weights.py
+
+Give me a 2 line summary of the above files 
+
+Step 6 --> Read the below files to understand the web interface 
+D:\Inpainting_tool2\src\interface\app.py
+D:\Inpainting_tool2\src\interface\components\canvas_handler.py
+D:\Inpainting_tool2\src\interface\components\ui_components.py
+
+FINAL TASK 
+Finally , give me the next steps to achieve the goal of this project 
+Also give me the basic flow of the project which expplains how the entire process of image inpainting will work
+and tell me if you need anything more to accomplish the above task

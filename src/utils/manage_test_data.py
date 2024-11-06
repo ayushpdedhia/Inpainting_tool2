@@ -1,4 +1,5 @@
 # src/utils/manage_test_data.py
+# python -m src.utils.manage_test_data       
 import logging
 from pathlib import Path
 from .organize_test_data import organize_test_files, verify_test_files

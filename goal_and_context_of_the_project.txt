@@ -1,0 +1,161 @@
+goal and context of the project 
+I must be able to run the app.py through the command streamlit run app.py 
+The code must then open my browser and open the web interface 
+Then i must be able to upload a image in that app by browsing my files 
+there must be four canvas avaliable 
+In the first canvas , only the input image must be generated 
+The second canvas must be named "Draw Mask Here" and there I must be able to draw two types of masks. First is the free hand mask and the other is rectangular mask 
+then the third canvas must be named "Extracted Mask" and it must only display the mask 
+then i must be able to click on a button named process image 
+After clicking the "process image" button the code must reconstruct the image that is generate plausible content for the masked areas while preserving the surrounding context.
+
+Now the code must use the pre-trained weights saved in the below paths mentioned 
+D:\Inpainting_tool2\weights\pconv\unet\model_weights.pth
+D:\Inpainting_tool2\weights\pconv\vgg16\pdvgg16_bn_model_best.pth.tar
+D:\Inpainting_tool2\weights\pconv\vgg16\vgg16_weights.pth
+
+the above weight D:\Inpainting_tool2\weights\pconv\vgg16\pdvgg16_bn_model_best.pth.tar is downloaded from the README.md file of the following git repository 
+https://github.com/NVIDIA/partialconv
+
+From the above git repository i got the following link in its README.md 
+### Pretrained checkpoints (weights) for VGG and ResNet networks with partial convolution based padding:
+```
+https://www.dropbox.com/sh/t6flbuoipyzqid8/AACJ8rtrF6V5b9348aG5PIhia?dl=0
+
+the other 2 weights were converted from the below .h5 files 
+D:\Inpainting_tool2\temp_weights\pconv_imagenet.h5
+D:\Inpainting_tool2\temp_weights\pytorch_to_keras_vgg16.h5
+
+I got the above weights from a different git repository 
+https://github.com/MathiasGruber/PConv-Keras
+
+I then converted above .h5 files using the below code file
+D:\Inpainting_tool2\scripts\weight_conversion\convert_weights.py
+D:\Inpainting_tool2\scripts\weight_conversion\converter.py
+
+I then verified the converted weights using the below code file
+D:\Inpainting_tool2\scripts\weight_conversion\verify_weights.py
+
+Output of verified_wieghts.py 
+Great! All verifications have passed successfully:
+
+Original H5 File: ✓
+Successfully verified the source H5 file structure
+All layers and weights present
+File size: 128571.11 KB
+
+UNet Weights: ✓
+Successfully converted and verified
+All encoder and decoder layers present
+All BatchNorm layers properly initialized
+File size: 128405.02 KB
+Number of layers: 76
+
+VGG Weights: ✓
+Successfully verified the NVIDIA VGG weights
+All expected layers present with correct module structure
+File size: 540552.17 KB
+Number of layers: 84
+
+After verififying the weights I downloaded some masks and test_samples 
+I downloaded the masks from the following website
+https://nv-adlr.github.io/publication/partialconv-inpainting
+https://www.dropbox.com/scl/fi/ffyha2ymdx7ngpa2vs5j2/irregular_mask.zip?rlkey=535a7nsitdn48lxhb6hbvexbn&e=1&dl=0
+
+
+so the following directory contains 55116 differnet masks in png format 
+D:\Inpainting_tool2\irregular_mask\disocclusion_img_mask
+the first image starts with the naming convention 00001.png and the last image ends with the naming convention 55116.png
+This takes about 1.2 Gb of my space
+
+Then i downloaded the ImageNet dataset from the following website , this takes up about 200 Gb of my space
+https://www.image-net.org/challenges/LSVRC/index.php
+https://www.kaggle.com/c/imagenet-object-localization-challenge/data
+
+Description of ImageNet Dataset
+E:\ayush\LY PROJECT\datasets\Image_net_datas\ILSVRC\Data\CLS-LOC
+
+The above folder contains three folders 
+test 
+train 
+val 
+
+test contains 100000 images in jpeg format 
+train contains 1000 folders and each folder contains about 1300 images 
+so total 1000 x 1300 = 1300000 images 
+val contains 50000 images 
+
+Then i selected 5 images from val and 5 images from test 6 masks from irregular_masks and created the following directory 
+├── data
+│   ├── processed
+│   ├── raw
+│   └── test_samples
+|       ├── documentation 
+|       |   ├── README.MD
+│       ├── images
+│       │   ├── README.MD
+│       │   ├── test_image_001.jpeg
+│       │   ├── test_image_002.jpeg
+│       │   ├── test_image_003.jpeg
+│       │   ├── test_image_004.jpeg
+│       │   ├── test_image_005.jpeg
+│       │   ├── val_image_001.jpeg
+│       │   ├── val_image_002.jpeg
+│       │   ├── val_image_003.jpeg
+│       │   ├── val_image_004.jpeg
+│       │   └── val_image_005.jpeg
+│       ├── masks
+│       │   ├── mask_corner.png
+│       │   ├── mask_edge.png
+│       │   ├── mask_large.png
+│       │   ├── mask_samll.png
+│       │   ├── mask_thick.png
+│       │   |── mask_thin.png
+│       │   └── README.MD
+|       |
+|       |── file_mapping.json
+│       └── test_samples_info.txt
+
+After then I ran the following code files 
+D:\Inpainting_tool2\src\utils\manage_test_data.py , D:\Inpainting_tool2\src\utils\organize_test_data.py , D:\Inpainting_tool2\src\utils\rename_test_files.py
+Output of manage_test_data.py
+2024-11-06 02:54:13,074 - INFO - Setting up test environment...
+2024-11-06 02:54:13,074 - INFO - Created directory: data\test_samples\images
+2024-11-06 02:54:13,074 - INFO - Created directory: data\test_samples\masks
+2024-11-06 02:54:13,074 - INFO - Created directory: data\test_samples\test_outputs
+2024-11-06 02:54:13,074 - INFO - Created README: data\test_samples\masks\README.md
+2024-11-06 02:54:13,074 - INFO - Created README: data\test_samples\images\README.md
+2024-11-06 02:54:13,074 - INFO - Created test samples info: data\test_samples\test_samples_info.txt
+2024-11-06 02:54:13,074 - INFO - Base directories created successfully
+2024-11-06 02:54:13,074 - INFO - All required test files are present
+2024-11-06 02:54:13,074 - INFO - Test files already organized, skipping reorganization
+Test environment setup completed successfully
+
+
+Then i ran the 7 test files one by one 
+│   ├── test_config.py
+│   ├── test_data_loader.py
+│   ├── test_image_processor.py
+│   ├── test_mask_generator.py
+│   ├── test_model_manager.py
+│   ├── test_pconv.py
+│   └── test_weight_loader.py 
+
+The output of the above files is uploaded in D:\Inpainting_tool2\tests\Output_of_seven_tests.txt
+
+Now the above 7 files test the below code files 
+D:\Inpainting_tool2\config.yaml
+D:\Inpainting_tool2\src\utils\data_loader.py
+D:\Inpainting_tool2\src\utils\image_processor.py
+D:\Inpainting_tool2\src\utils\mask_generator.py
+D:\Inpainting_tool2\src\core\model_manager.py
+D:\Inpainting_tool2\src\models\pconv\layers\partialconv2d.py
+D:\Inpainting_tool2\src\models\pconv\models\pconv_unet.py
+D:\Inpainting_tool2\src\models\pconv\vgg_extractor.py
+D:\Inpainting_tool2\src\models\pconv\loss.py
+D:\Inpainting_tool2\src\utils\mask_generator.py
+
+
+REFERNCES USED FOR PROJECT 
+https://github.com/NVIDIA/partialconv
+https://github.com/MathiasGruber/PConv-Keras
