@@ -4,19 +4,42 @@ import numpy as np
 import os
 import traceback
 from collections import OrderedDict
-from typing import Dict, Optional, Tuple, Any
+from typing import Dict, Optional, Tuple, Any, List
+from torch.utils.data import DataLoader
 
 from ..models.pconv.loss import PConvLoss
 from ..models.pconv.models.pconv_unet import PConvUNet
 from ..utils.weight_loader import WeightLoader
+from ..utils.data_loader import InpaintingDataset, get_data_loader
 
 class ModelManager:
-    def __init__(self):
+    def __init__(self, config_path: Optional[str] = None):
+        """
+        Initialize ModelManager
+        
+        Args:
+            config_path: Optional path to config file. If None, uses default path.
+        """
         self.models: Dict[str, torch.nn.Module] = {}
         self.available_models = {
             'partial convolutions': 'pdvgg16_bn'
         }
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
+        # Get config path
+        if config_path is None:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            config_path = os.path.join(current_dir, '..', '..', 'config.yaml')
+        
+        # Initialize weight loader and device
+        try:
+            self.weight_loader = WeightLoader(config_path)
+            # Use device from config if available
+            self.device = torch.device(self.weight_loader.config['model'].get('device', 'cuda' if torch.cuda.is_available() else 'cpu'))
+        except Exception as e:
+            print(f"Error initializing WeightLoader: {str(e)}")
+            self.weight_loader = None
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
         print(f"Using device: {self.device}")
         self.vgg_weights_path = None
         self.load_models()
@@ -42,34 +65,51 @@ class ModelManager:
             # Load PConv model
             model = PConvUNet()
             model = model.to(self.device)
-            
-            # Load model weights
-            weights_path = os.path.join(base_weights_dir, 'unet', 'model_weights.pth')
-            if os.path.exists(weights_path):
+
+            weights_loaded = False
+
+            # First try using WeightLoader
+            if self.weight_loader is not None:
                 try:
-                    checkpoint = torch.load(weights_path, map_location=self.device)
-                    if isinstance(checkpoint, OrderedDict):
-                        state_dict = checkpoint
-                    else:
-                        state_dict = checkpoint.get('state_dict', checkpoint)
-                    
-                    # Create a new state dict with the correct keys
-                    new_state_dict = OrderedDict()
-                    for k, v in state_dict.items():
-                        # Remove 'module.' prefix if present
-                        name = k.replace('module.', '')
-                        if name.startswith('features.'):
-                            # Map features to encoder
-                            new_name = name.replace('features.', 'encoder.features.')
-                            new_state_dict[new_name] = v
-                        else:
-                            new_state_dict[name] = v
-                    
-                    model.load_state_dict(new_state_dict, strict=False)
-                    print(f"Successfully loaded model weights from {weights_path}")
+                    model = self.weight_loader.load_model_weights(model, load_vgg=True)
+                    print("Successfully loaded model weights using WeightLoader")
+                    weights_loaded = True
                 except Exception as e:
-                    print(f"Error loading model weights: {str(e)}")
-                    raise
+                    print(f"WeightLoader failed, falling back to direct loading: {str(e)}")
+            
+            # Fallback to direct loading if WeightLoader failed
+            if not weights_loaded:
+                weights_path = os.path.join(base_weights_dir, 'unet', 'model_weights.pth')
+                if os.path.exists(weights_path):
+                    try:
+                        checkpoint = torch.load(weights_path, map_location=self.device)
+                        if isinstance(checkpoint, OrderedDict):
+                            state_dict = checkpoint
+                        else:
+                            state_dict = checkpoint.get('state_dict', checkpoint)
+                        
+                        # Create a new state dict with the correct keys
+                        new_state_dict = OrderedDict()
+                        for k, v in state_dict.items():
+                            # Remove 'module.' prefix if present
+                            name = k.replace('module.', '')
+                            if name.startswith('features.'):
+                                # Map features to encoder
+                                new_name = name.replace('features.', 'encoder.features.')
+                                new_state_dict[new_name] = v
+                            else:
+                                new_state_dict[name] = v
+                        
+                        model.load_state_dict(new_state_dict, strict=False)
+                        print(f"Successfully loaded model weights from {weights_path}")
+
+                        # Setup VGG weights path for future use
+                        self.vgg_weights_path = os.path.join(base_weights_dir, 'vgg16', 'vgg16_weights.pth')
+                    except Exception as e:
+                        print(f"Error loading model weights: {str(e)}")
+                        raise
+                else:
+                    raise FileNotFoundError(f"Model weights not found at {weights_path}")
             
             model.eval()
             self.models['partial convolutions'] = model
@@ -79,6 +119,39 @@ class ModelManager:
             print(f"Stack trace: {traceback.format_exc()}")
             raise
 
+        
+    def create_data_loader(self,
+                          image_dir: str,
+                          mask_dir: Optional[str] = None,
+                          batch_size: int = 1,
+                          image_size: Tuple[int, int] = (512, 512),
+                          num_workers: int = 4,
+                          shuffle: bool = False) -> DataLoader:
+        """Create a data loader for processing multiple images"""
+        return get_data_loader(
+            image_dir=image_dir,
+            mask_dir=mask_dir,
+            batch_size=batch_size,
+            image_size=image_size,
+            num_workers=num_workers,
+            shuffle=shuffle
+        )
+    
+    def process_batch(self, 
+                     data_loader: DataLoader, 
+                     model_name: str = 'partial convolutions') -> List[np.ndarray]:
+        """Process a batch of images using the model"""
+        results = []
+        for batch in data_loader:
+            image = batch['image'].numpy()
+            mask = batch['mask'].numpy()
+            
+            for i in range(len(image)):
+                result = self.inpaint(image[i], mask[i], model_name)
+                results.append(result)
+                
+        return results
+    
     def preprocess_inputs(self, image: np.ndarray, mask: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Preprocess numpy inputs to torch tensors.

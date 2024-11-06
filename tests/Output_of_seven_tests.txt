@@ -142,37 +142,37 @@ tests/test_mask_generator.py::TestMaskGenerator::test_error_handling PASSED     
 
 Output of test_model_manager.py 
 -----------------------------
-PS D:\Inpainting_tool2> python -m pytest tests/test_model_manager.py  
-======================================================================== test session starts ========================================================================
+PS D:\Inpainting_tool2> python -m pytest tests/test_model_manager.py
+======================================================================================= test session starts ========================================================================================
 platform win32 -- Python 3.11.0, pytest-8.3.3, pluggy-1.5.0 -- D:\Inpainting_tool2\.venv\Scripts\python.exe
 cachedir: .pytest_cache
 rootdir: D:\Inpainting_tool2
 configfile: pytest.ini
-collected 15 items                                                                                                                                                   
+collected 15 items                                                                                                                                                                                  
 
-tests/test_model_manager.py::TestModelManager::test_initialization PASSED                                                                                      [  6%]
-tests/test_model_manager.py::TestModelManager::test_model_loading PASSED                                                                                       [ 13%]
-tests/test_model_manager.py::TestModelManager::test_preprocess_inputs PASSED                                                                                   [ 20%]
-tests/test_model_manager.py::TestModelManager::test_postprocess_output PASSED                                                                                  [ 26%]
-tests/test_model_manager.py::TestModelManager::test_inpainting PASSED                                                                                          [ 33%]
-tests/test_model_manager.py::TestModelManager::test_available_models PASSED                                                                                    [ 40%]
-tests/test_model_manager.py::TestModelManager::test_model_info PASSED                                                                                          [ 46%]
-tests/test_model_manager.py::TestModelManager::test_invalid_model_name PASSED                                                                                  [ 53%]
-tests/test_model_manager.py::TestModelManager::test_invalid_input_shapes PASSED                                                                                [ 60%]
-tests/test_model_manager.py::TestModelManager::test_device_handling PASSED                                                                                     [ 66%]
-tests/test_model_manager.py::TestModelManager::test_model_consistency PASSED                                                                                   [ 73%]
-tests/test_model_manager.py::TestModelManager::test_batch_processing PASSED                                                                                    [ 80%]
-tests/test_model_manager.py::TestModelManager::test_memory_efficiency PASSED                                                                                   [ 86%]
-tests/test_model_manager.py::TestModelManager::test_error_handling PASSED                                                                                      [ 93%]
-tests/test_model_manager.py::TestModelManager::test_output_validation PASSED                                                                                   [100%]
+tests/test_model_manager.py::TestModelManager::test_initialization PASSED                                                                                                                     [  6%]
+tests/test_model_manager.py::TestModelManager::test_model_loading PASSED                                                                                                                      [ 13%]
+tests/test_model_manager.py::TestModelManager::test_preprocess_inputs PASSED                                                                                                                  [ 20%]
+tests/test_model_manager.py::TestModelManager::test_postprocess_output PASSED                                                                                                                 [ 26%]
+tests/test_model_manager.py::TestModelManager::test_inpainting PASSED                                                                                                                         [ 33%]
+tests/test_model_manager.py::TestModelManager::test_available_models PASSED                                                                                                                   [ 40%]
+tests/test_model_manager.py::TestModelManager::test_model_info PASSED                                                                                                                         [ 46%]
+tests/test_model_manager.py::TestModelManager::test_invalid_model_name PASSED                                                                                                                 [ 53%]
+tests/test_model_manager.py::TestModelManager::test_invalid_input_shapes PASSED                                                                                                               [ 60%]
+tests/test_model_manager.py::TestModelManager::test_device_handling PASSED                                                                                                                    [ 66%]
+tests/test_model_manager.py::TestModelManager::test_model_consistency PASSED                                                                                                                  [ 73%]
+tests/test_model_manager.py::TestModelManager::test_batch_processing PASSED                                                                                                                   [ 80%]
+tests/test_model_manager.py::TestModelManager::test_memory_efficiency PASSED                                                                                                                  [ 86%]
+tests/test_model_manager.py::TestModelManager::test_error_handling PASSED                                                                                                                     [ 93%]
+tests/test_model_manager.py::TestModelManager::test_output_validation PASSED                                                                                                                  [100%]
 
-========================================================================= warnings summary ========================================================================== 
+========================================================================================= warnings summary =========================================================================================
 .venv\Lib\site-packages\streamlit\elements\image.py:22
-  D:\Inpainting_tool2\.venv\Lib\site-packages\streamlit\elements\image.py:22: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13        
+  D:\Inpainting_tool2\.venv\Lib\site-packages\streamlit\elements\image.py:22: DeprecationWarning: 'imghdr' is deprecated and slated for removal in Python 3.13
     import imghdr
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-================================================================== 15 passed, 1 warning in 29.29s ===================================================================
+================================================================================== 15 passed, 1 warning in 29.43s =================================================================================
 
 
 Output of test_pconv.py 

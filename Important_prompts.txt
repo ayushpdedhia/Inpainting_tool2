@@ -38,8 +38,39 @@ Step 6 --> Read the below files to understand the web interface
 D:\Inpainting_tool2\src\interface\app.py
 D:\Inpainting_tool2\src\interface\components\canvas_handler.py
 D:\Inpainting_tool2\src\interface\components\ui_components.py
+------------------------------------------------------------------------
 
-FINAL TASK 
-Finally , give me the next steps to achieve the goal of this project 
-Also give me the basic flow of the project which expplains how the entire process of image inpainting will work
-and tell me if you need anything more to accomplish the above task
+When i run app.py , D:\Inpainting_tool2\src\interface\app.py
+it is connected to 
+D:\Inpainting_tool2\src\interface\components\canvas_handler.py
+D:\Inpainting_tool2\src\interface\components\ui_components.py
+D:\Inpainting_tool2\src\utils\image_processor.py
+D:\Inpainting_tool2\src\core\model_manager.py
+
+canvas_handler.py is connected to mask_generator.py
+D:\Inpainting_tool2\src\utils\mask_generator.py
+
+
+Now model_manager.py is connected to 
+D:\Inpainting_tool2\src\utils\weight_loader.py
+D:\Inpainting_tool2\src\utils\data_loader.py
+D:\Inpainting_tool2\src\models\pconv\models\pconv_unet.py
+D:\Inpainting_tool2\src\models\pconv\loss.py
+
+data_loader.py is connected to 
+D:\Inpainting_tool2\src\utils\image_processor.py
+D:\Inpainting_tool2\src\utils\mask_generator.py
+
+loss.py is connected to
+D:\Inpainting_tool2\src\models\pconv\vgg_extractor.py
+
+
+pconv_unet.py is conected to
+D:\Inpainting_tool2\src\models\pconv\layers\partialconv2d.py
+
+DO YOU THINK WE NEED TO CONNECT MORE FILES from the structure of my codebase?
+or are these connections enough
+
+and also give me a 2 line summary of the above mentioned file so that i know u have read them 
+and tell me if they need any improvements 
+

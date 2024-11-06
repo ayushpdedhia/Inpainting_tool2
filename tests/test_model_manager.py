@@ -10,11 +10,12 @@ import tempfile
 import shutil
 from unittest.mock import MagicMock, patch
 from collections import OrderedDict
-
+import yaml
 from src.core.model_manager import ModelManager
 from src.models.pconv.models.pconv_unet import PConvUNet
 from src.models.pconv.loss import PConvLoss
 from memory_profiler import memory_usage
+
 
 class TestModelManager:
     """Test suite for ModelManager class"""
@@ -43,6 +44,37 @@ class TestModelManager:
         
         yield temp_dir
         shutil.rmtree(temp_dir)
+
+    @pytest.fixture
+    def mock_config(self, mock_weights_dir):
+        """Fixture providing temporary config file"""
+        config_path = os.path.join(mock_weights_dir, 'config.yaml')
+        
+        config_content = {
+            'model': {
+                'name': 'pconv_unet',
+                'weights_dir': 'weights/pconv',
+                'input_size': [512, 512],
+                'device': 'cpu'
+            },
+            'paths': {
+                'data_dir': 'data',
+                'weights_dir': 'weights',
+                'temp_weights': 'temp_weights',
+                'unet_weights': str(Path(mock_weights_dir) / 'weights' / 'pconv' / 'unet' / 'model_weights.pth'),
+                'vgg_weights': str(Path(mock_weights_dir) / 'weights' / 'pconv' / 'vgg16' / 'vgg16_weights.pth')
+            },
+            'interface': {
+                'canvas_size': 512,
+                'max_image_size': 1024,
+                'supported_formats': ['jpg', 'jpeg', 'png']
+            }
+        }
+        
+        with open(config_path, 'w') as f:
+            yaml.dump(config_content, f)
+            
+        return config_path
 
     @pytest.fixture
     def model_manager(self, mock_weights_dir):

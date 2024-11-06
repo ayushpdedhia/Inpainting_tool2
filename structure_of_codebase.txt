@@ -150,6 +150,7 @@ INPAINTING_TOOL2
 ├── dataset.txt
 ├── goal_of_the_project.txt
 ├── imp_stuff.txt
+├── imp_prompts.txt
 ├── pytest.ini
 ├── README.md
 ├── setup.sh

@@ -6,6 +6,9 @@ from PIL import Image
 from streamlit_drawable_canvas import st_canvas
 from typing import Tuple, Dict, Optional
 
+# Import MaskGenerator and MaskConfig from utils
+from ...utils.mask_generator import MaskGenerator, MaskConfig
+
 class CanvasHandler:
     """Handles canvas operations for the inpainting tool"""
     
@@ -15,11 +18,40 @@ class CanvasHandler:
         # Add real-time preview
         self.preview_container = None
 
+        # Initialize mask generator with configuration
+        try:
+            self.mask_generator = MaskGenerator(
+                height=canvas_size,
+                width=canvas_size,
+                channels=1,
+                config=MaskConfig(
+                    min_num_shapes=1,
+                    max_num_shapes=10,
+                    min_shape_size=10,
+                    max_shape_size=int(canvas_size * 0.5)
+                )
+            )
+            print(f"MaskGenerator initialized with canvas size: {canvas_size}")
+        except Exception as e:
+            st.error(f"Error initializing MaskGenerator: {str(e)}")
+            self.mask_generator = None
+
     def setup_canvas(self, image: Image.Image, stroke_width: int, drawing_mode: str) -> Dict:
         """Setup the drawing canvas with real-time preview"""
         try:
             # Add real-time preview container
             preview_col = st.empty()
+
+            # Add random mask generation button if mask generator is available
+            if self.mask_generator is not None:
+                if st.button("Generate Random Mask"):
+                    try:
+                        random_mask = self.mask_generator.sample()
+                        preview_col.image(random_mask, caption="Generated Random Mask")
+                        # Store the generated mask for later use
+                        self._last_generated_mask = random_mask
+                    except Exception as e:
+                        st.error(f"Error generating random mask: {str(e)}")
             
             # Resize image with high-quality resampling
             resized_image = image.resize((self.canvas_size, self.canvas_size),
@@ -48,11 +80,12 @@ class CanvasHandler:
         except Exception as e:
             st.error(f"Error setting up canvas: {str(e)}")
             return None
-        
 
     def process_canvas_result(self, canvas_result: Dict) -> Optional[np.ndarray]:
         """Process canvas result to generate mask"""
         if canvas_result.image_data is None:
+            if hasattr(self, '_last_generated_mask'):
+                return self._last_generated_mask
             return None
             
         mask_display = np.zeros((self.canvas_size, self.canvas_size), dtype=np.uint8)
@@ -133,4 +166,3 @@ class CanvasHandler:
                         process_clicked = True
         
         return mask, process_clicked
-    
