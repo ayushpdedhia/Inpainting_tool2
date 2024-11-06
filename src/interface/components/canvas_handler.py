@@ -128,6 +128,7 @@ class CanvasHandler:
         
         # Create 2x2 grid layout
         col1, col2 = st.columns(2)
+        col3, col4 = st.columns(2)
         
         # Original image (top left)
         with col1:
@@ -143,17 +144,47 @@ class CanvasHandler:
             if self.mask_generator is not None:
                 if st.button("Generate Random Mask", key="random_mask_btn"):
                     try:
+                        # Generate random mask
                         random_mask = self.mask_generator.sample()
-                        self._last_generated_mask = random_mask
+                        print(f"Generated random mask shape: {random_mask.shape}")
+                        print(f"Random mask min/max values: {random_mask.min()}, {random_mask.max()}")
+                        
+                        # Store the original mask for extraction
+                        self._last_generated_mask = random_mask.copy()
+                        
+                        # Convert for display
+                        display_mask = (random_mask * 255).astype(np.uint8)
+                        if len(display_mask.shape) == 2:
+                            display_mask = np.stack([display_mask] * 3 + [display_mask], axis=-1)
+                        
+                        st.session_state.random_mask = display_mask
+                        st.session_state.using_random_mask = True
+                        print("Random mask generated and stored successfully")
+                        
                     except Exception as e:
                         st.error(f"Error generating random mask: {str(e)}")
+                        import traceback
+                        print(f"Random mask generation error: {str(e)}")
+                        print(f"Traceback: {traceback.format_exc()}")
+            
+            # Create canvas with random mask overlay if available
+            background_image = resized_image
+            if 'random_mask' in st.session_state and st.session_state.using_random_mask:
+                try:
+                    # Create a masked version of the image for display
+                    print("Applying random mask overlay")
+                    mask_overlay = Image.fromarray(st.session_state.random_mask)
+                    background_image = Image.fromarray(np.array(resized_image))
+                    background_image.paste(mask_overlay, (0, 0), mask_overlay)
+                except Exception as e:
+                    print(f"Error applying mask overlay: {str(e)}")
             
             canvas_result = st_canvas(
                 fill_color="#FFFFFF",
                 stroke_width=controls['stroke_width'],
                 stroke_color="#FFFFFF",
                 background_color="#000000",
-                background_image=resized_image,
+                background_image=background_image,
                 drawing_mode=controls['drawing_mode'],
                 height=self.canvas_size,
                 width=self.canvas_size,
@@ -166,13 +197,16 @@ class CanvasHandler:
         mask_valid = False
         process_clicked = False
 
-        if hasattr(self, '_last_generated_mask'):
+        # Handle mask selection
+        if ('using_random_mask' in st.session_state and 
+            st.session_state.using_random_mask and 
+            hasattr(self, '_last_generated_mask')):
+            print("Using random mask")
             mask = self._last_generated_mask
         elif canvas_result is not None and canvas_result.image_data is not None:
-            # For freedraw mode
+            print("Using canvas mask")
             if controls['drawing_mode'] == "freedraw":
-                mask = canvas_result.image_data[:, :, -1]  # Get alpha channel
-            # For rectangle mode
+                mask = canvas_result.image_data[:, :, -1]
             elif controls['drawing_mode'] == "rect" and canvas_result.json_data is not None:
                 mask = np.zeros((self.canvas_size, self.canvas_size), dtype=np.uint8)
                 for obj in canvas_result.json_data.get("objects", []):
@@ -183,10 +217,11 @@ class CanvasHandler:
                         h = int(obj["height"])
                         cv2.rectangle(mask, (x, y), (x+w, y+h), 255, -1)
         
-        mask_valid = validate_mask(mask) if mask is not None else False
+        if mask is not None:
+            print(f"Final mask shape: {mask.shape}")
+            print(f"Final mask min/max values: {mask.min()}, {mask.max()}")
         
-        # Bottom row layout
-        col3, col4 = st.columns(2)
+        mask_valid = validate_mask(mask) if mask is not None else False
         
         # Extracted mask preview (bottom left)
         with col3:
