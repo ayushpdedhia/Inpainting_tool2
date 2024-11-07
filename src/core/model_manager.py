@@ -167,11 +167,12 @@ class ModelManager:
     def preprocess_inputs(self, image: np.ndarray, mask: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Preprocess numpy inputs to torch tensors.
+        Handles both BCHW and HWC input formats.
         
         Args:
-            image (np.ndarray): Input image in numpy format with shape [H, W, C], 
+            image (np.ndarray): Input image in numpy format with shape [H, W, C] or [B, C, H, W],
                             where C=3 for RGB images. Values should be in range [0, 1].
-            mask (np.ndarray): Binary mask with shape [H, W] or [H, W, 1], 
+            mask (np.ndarray): Binary mask with shape [H, W], [H, W, 1], or [B, 1, H, W],
                             where 1 indicates regions to keep and 0 indicates regions to inpaint.
                             
         Returns:
@@ -193,44 +194,65 @@ class ModelManager:
             print(f"Input image shape: {image.shape}")
             print(f"Input mask shape: {mask.shape}")
 
-            # Shape validation
-            if len(image.shape) != 3:
-                raise ValueError(f"Expected image with shape [H, W, C], got {image.shape}")
-            if len(mask.shape) not in [2, 3]:
-                raise ValueError(f"Expected mask with shape [H, W] or [H, W, 1], got {mask.shape}")
-            
-            # Channel validation
-            if image.shape[2] != 3:
-                raise ValueError(f"Expected 3 channels (RGB) for image, got {image.shape[2]}")
+            # Handle both BCHW and HWC formats for image
+            if len(image.shape) == 4:  # BCHW format
+                if image.shape[1] != 3:
+                    raise ValueError(f"Expected 3 channels (RGB) for image, got {image.shape[1]}")
+                # Take first batch if batched
+                image = image[0] if image.shape[0] > 1 else image
+                image_tensor = torch.from_numpy(image)
+            else:  # HWC format
+                # Shape validation
+                if len(image.shape) != 3:
+                    raise ValueError(f"Expected image with shape [H, W, C], got {image.shape}")
+                if image.shape[2] != 3:
+                    raise ValueError(f"Expected 3 channels (RGB) for image, got {image.shape[2]}")
+                
+                # Value range validation
+                if np.min(image) < 0 or np.max(image) > 1:
+                    raise ValueError(f"Image values must be in range [0, 1], got range [{np.min(image)}, {np.max(image)}]")
+                
+                # Convert HWC to BCHW
+                image = image.astype(np.float32)
+                image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0)
 
-            # Dimension matching
-            img_h, img_w = image.shape[:2]
-            mask_h, mask_w = mask.shape[:2]
-            if img_h != mask_h or img_w != mask_w:
-                raise ValueError(
-                    f"Image dimensions ({img_h}, {img_w}) must match mask dimensions ({mask_h}, {mask_w})"
-                )
+            # Handle mask format
+            if len(mask.shape) == 4:  # BCHW format
+                mask = mask[0] if mask.shape[0] > 1 else mask
+                if mask.shape[1] != 1:
+                    mask = mask[:1]  # Take first channel if multi-channel
+                mask_tensor = torch.from_numpy(mask)
+            else:
+                # Ensure mask is 2D
+                if len(mask.shape) == 3:
+                    mask = mask.squeeze(-1)
+                elif len(mask.shape) != 2:
+                    raise ValueError(f"Expected mask with shape [H, W] or [H, W, 1], got {mask.shape}")
+                
+                # Value range validation for mask
+                if np.min(mask) < 0 or np.max(mask) > 1:
+                    raise ValueError(f"Mask values must be in range [0, 1], got range [{np.min(mask)}, {np.max(mask)}]")
+                
+                # Dimension matching
+                img_h, img_w = image_tensor.shape[-2:]
+                mask_h, mask_w = mask.shape
+                if img_h != mask_h or img_w != mask_w:
+                    raise ValueError(
+                        f"Image dimensions ({img_h}, {img_w}) must match mask dimensions ({mask_h}, {mask_w})"
+                    )
 
-            # Value range validation
-            if np.min(image) < 0 or np.max(image) > 1:
-                raise ValueError(f"Image values must be in range [0, 1], got range [{np.min(image)}, {np.max(image)}]")
-            if np.min(mask) < 0 or np.max(mask) > 1:
-                raise ValueError(f"Mask values must be in range [0, 1], got range [{np.min(mask)}, {np.max(mask)}]")
+                # Convert to float32
+                mask = mask.astype(np.float32)
+                
+                # Invert mask for processing (0 for regions to keep, 1 for regions to inpaint)
+                inv_mask = 1 - mask
+                
+                # Convert to tensor with proper dimensions
+                mask_tensor = torch.from_numpy(inv_mask).unsqueeze(0).unsqueeze(0)
 
-            # Convert to float32
-            image = image.astype(np.float32)
-            mask = mask.astype(np.float32)
-
-            # Ensure mask is 2D
-            if len(mask.shape) == 3:
-                mask = mask.squeeze(-1)
-
-            # Invert mask for processing (0 for regions to keep, 1 for regions to inpaint)
-            inv_mask = 1 - mask
-
-            # Convert to tensors and reshape
-            image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0)
-            mask_tensor = torch.from_numpy(inv_mask).unsqueeze(0).unsqueeze(0)
+            # Ensure float32 type
+            image_tensor = image_tensor.float()
+            mask_tensor = mask_tensor.float()
 
             # Print tensor shapes for debugging
             print(f"Preprocessed image tensor shape: {image_tensor.shape}")
@@ -333,15 +355,26 @@ class ModelManager:
                 if torch.isinf(output).any():
                     raise ValueError("Model output contains infinite values")
                 
+                # Get input shape format (BCHW or HWC)
+                input_is_bchw = len(image.shape) == 4
+                
                 # Postprocess output
                 result = self.postprocess_output(output, image_tensor, mask_tensor)
+
+                # Validate output shape based on input format
+                if input_is_bchw:
+                    expected_shape = (image.shape[2], image.shape[3], image.shape[1])  # Convert BCHW to HWC
+                else:
+                    expected_shape = image.shape  # Keep HWC as is
                 
                 # Final validation of result
                 if not isinstance(result, np.ndarray):
                     raise TypeError(f"Expected numpy array output, got {type(result)}")
                 
-                if result.shape != image.shape:
-                    raise ValueError(f"Output shape {result.shape} doesn't match input shape {image.shape}")
+                if result.shape != expected_shape:
+                    raise ValueError(
+                        f"Output shape {result.shape} doesn't match expected shape {expected_shape}"
+                    )
             
             return result
             
