@@ -5,7 +5,7 @@ import cv2
 from PIL import Image
 from streamlit_drawable_canvas import st_canvas
 from typing import Tuple, Dict, Optional
-
+import traceback
 # Import MaskGenerator and MaskConfig from utils
 from ...utils.mask_generator import MaskGenerator, MaskConfig
 
@@ -17,6 +17,16 @@ class CanvasHandler:
         self.config = config
         # Add real-time preview
         self.preview_container = None
+
+        # Initialize all required session state variables
+        if 'random_mask_array' not in st.session_state:
+            st.session_state.random_mask_array = None
+        if 'manual_mask' not in st.session_state:
+            st.session_state.manual_mask = np.zeros((self.canvas_size, self.canvas_size), dtype=np.uint8)
+        if 'random_mask' not in st.session_state:
+            st.session_state.random_mask = None
+        if 'using_random_mask' not in st.session_state:
+            st.session_state.using_random_mask = False
 
         # Initialize mask generator with configuration
         try:
@@ -35,54 +45,31 @@ class CanvasHandler:
         except Exception as e:
             st.error(f"Error initializing MaskGenerator: {str(e)}")
             self.mask_generator = None
-    '''
-    def setup_canvas(self, image: Image.Image, stroke_width: int, drawing_mode: str) -> Dict:
-        """Setup the drawing canvas with real-time preview"""
-        try:
-            # Add real-time preview container
-            preview_col = st.empty()
 
-            # Add random mask generation button if mask generator is available
-            if self.mask_generator is not None:
-                if st.button("Generate Random Mask"):
-                    try:
-                        random_mask = self.mask_generator.sample()
-                        preview_col.image(random_mask, caption="Generated Random Mask")
-                        # Store the generated mask for later use
-                        self._last_generated_mask = random_mask
-                    except Exception as e:
-                        st.error(f"Error generating random mask: {str(e)}")
-            
-            # Resize image with high-quality resampling
-            resized_image = image.resize((self.canvas_size, self.canvas_size),
-                                    Image.Resampling.LANCZOS)
-            
-            # Remove the on_change parameter and use the canvas directly
-            canvas_result = st_canvas(
-                fill_color="#FFFFFF",
-                stroke_width=stroke_width,
-                stroke_color="#FFFFFF",
-                background_color="#000000",
-                background_image=resized_image,
-                drawing_mode=drawing_mode,
-                height=self.canvas_size,
-                width=self.canvas_size,
-                key="canvas",
-                display_toolbar=True
-            )
+    def combine_masks(self, manual_mask, random_mask):
+        """Combine manual and random masks"""
+        # Convert manual mask to proper format
+        if manual_mask is not None:
+            manual_mask_binary = manual_mask.astype(np.uint8)
+        else:
+            manual_mask_binary = np.zeros((self.canvas_size, self.canvas_size), dtype=np.uint8)
 
-            # Update preview after canvas drawing
-            if canvas_result is not None and canvas_result.image_data is not None:
-                mask = self.process_canvas_result(canvas_result)
-                if mask is not None:
-                    preview_col.image(mask, caption="Real-time Mask Preview")
+        # Convert random mask to proper format
+        if random_mask is not None:
+            random_mask_binary = (random_mask * 255).astype(np.uint8)
+            if len(random_mask_binary.shape) == 3:
+                random_mask_binary = random_mask_binary[:, :, 0]
+        else:
+            random_mask_binary = np.zeros_like(manual_mask_binary)
 
-            return canvas_result
+        # Print debug info
+        print(f"Manual mask shape: {manual_mask_binary.shape}, type: {manual_mask_binary.dtype}")
+        print(f"Random mask shape: {random_mask_binary.shape}, type: {random_mask_binary.dtype}")
 
-        except Exception as e:
-            st.error(f"Error setting up canvas: {str(e)}")
-            return None
-             '''
+        # Combine masks using bitwise OR
+        combined = cv2.bitwise_or(manual_mask_binary, random_mask_binary)
+        print(f"Combined mask shape: {combined.shape}, type: {combined.dtype}")
+        return combined
 
     def process_canvas_result(self, canvas_result: Dict) -> Optional[np.ndarray]:
         """Process canvas result to generate mask"""
@@ -152,27 +139,26 @@ class CanvasHandler:
                         # Store the original mask for extraction
                         self._last_generated_mask = random_mask.copy()
                         
-                        # Convert for display
+                        # Store both the original array and display version
+                        st.session_state.random_mask_array = random_mask.copy()
                         display_mask = (random_mask * 255).astype(np.uint8)
                         if len(display_mask.shape) == 2:
                             display_mask = np.stack([display_mask] * 3 + [display_mask], axis=-1)
                         
                         st.session_state.random_mask = display_mask
                         st.session_state.using_random_mask = True
-                        print("Random mask generated and stored successfully")
+                        
+                        print("Random mask stored in session state")
                         
                     except Exception as e:
                         st.error(f"Error generating random mask: {str(e)}")
-                        import traceback
                         print(f"Random mask generation error: {str(e)}")
                         print(f"Traceback: {traceback.format_exc()}")
             
-            # Create canvas with random mask overlay if available
+            # Create canvas with random mask overlay
             background_image = resized_image
-            if 'random_mask' in st.session_state and st.session_state.using_random_mask:
+            if st.session_state.using_random_mask and st.session_state.random_mask is not None:
                 try:
-                    # Create a masked version of the image for display
-                    print("Applying random mask overlay")
                     mask_overlay = Image.fromarray(st.session_state.random_mask)
                     background_image = Image.fromarray(np.array(resized_image))
                     background_image.paste(mask_overlay, (0, 0), mask_overlay)
@@ -192,16 +178,7 @@ class CanvasHandler:
                 display_toolbar=True
             )
         
-        # Process mask
-        mask = None
-        mask_valid = False
-        process_clicked = False
-
-        # Initialize mask storage
-        if 'manual_mask' not in st.session_state:
-            st.session_state.manual_mask = np.zeros((self.canvas_size, self.canvas_size), dtype=np.uint8)
-
-        # Handle manual mask drawing (rect or freedraw)
+        # Process manual mask
         if canvas_result is not None and canvas_result.image_data is not None:
             print("Processing canvas input")
             if controls['drawing_mode'] == "freedraw":
@@ -216,39 +193,16 @@ class CanvasHandler:
                         h = int(obj["height"])
                         cv2.rectangle(st.session_state.manual_mask, (x, y), (x+w, y+h), 255, -1)
 
-        # Combine manual and random masks
-        mask = st.session_state.manual_mask.copy()
-
-        if ('using_random_mask' in st.session_state and 
-            st.session_state.using_random_mask and 
-            hasattr(self, '_last_generated_mask')):
-            print("Combining with random mask")
-            # Convert random mask to proper format
-            random_mask = (self._last_generated_mask * 255).astype(np.uint8)
-            
-            # Print debug information
-            print(f"Random mask shape: {random_mask.shape}")
-            print(f"Random mask min/max: {random_mask.min()}, {random_mask.max()}")
-            print(f"Manual mask shape: {mask.shape}")
-            print(f"Manual mask min/max: {mask.min()}, {mask.max()}")
-            
-            # Combine masks using bitwise OR
-            mask = cv2.bitwise_or(mask, random_mask)
-            print(f"Combined mask min/max: {mask.min()}, {mask.max()}")
-
-        if mask is not None:
-            print(f"Final mask shape: {mask.shape}")
-            print(f"Final mask min/max values: {mask.min()}, {mask.max()}")
-
-        mask_valid = validate_mask(mask) if mask is not None else False
-
-        # Extracted mask preview (bottom left)
+        # Combine masks using session state
+        combined_mask = self.combine_masks(
+            st.session_state.manual_mask,
+            st.session_state.random_mask_array if st.session_state.using_random_mask else None
+        )
+        
         with col3:
             st.subheader("Extracted Mask")
-            if mask is not None:
-                # Ensure mask is properly normalized for display
-                display_mask = mask.astype(np.uint8)
-                st.image(display_mask, width=self.canvas_size, caption="Combined Mask")
+            if combined_mask is not None:
+                st.image(combined_mask, width=self.canvas_size, caption="Combined Mask")
                 
                 # Debug display of individual masks
                 if st.checkbox("Show Individual Masks"):
@@ -256,15 +210,16 @@ class CanvasHandler:
                     with col3a:
                         st.image(st.session_state.manual_mask, caption="Manual Mask")
                     with col3b:
-                        if hasattr(self, '_last_generated_mask'):
-                            random_display = (self._last_generated_mask * 255).astype(np.uint8)
+                        if st.session_state.using_random_mask and st.session_state.random_mask_array is not None:
+                            random_display = (st.session_state.random_mask_array * 255).astype(np.uint8)
                             st.image(random_display, caption="Random Mask")
         
         # Inpainting result placeholder (bottom right)
         with col4:
             st.subheader("Inpainting Result")
-            if mask_valid:
+            process_clicked = False
+            if validate_mask(combined_mask):
                 if st.button("Process Image", key="process_button"):
                     process_clicked = True
         
-        return mask, process_clicked
+        return combined_mask, process_clicked
