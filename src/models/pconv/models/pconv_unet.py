@@ -80,7 +80,7 @@ class PConvUNet(nn.Module):
 
         self.final = nn.Sequential(
             nn.Conv2d(input_channels * 2, input_channels, kernel_size=3, padding=1),
-            nn.Sigmoid()
+            nn.ReLU(inplace=True)  # Changed from Sigmoid to ReLU to preserve color range
         )
 
     def upsample(self, x):
@@ -232,6 +232,10 @@ class PConvUNet(nn.Module):
 
             # Final output
             output = self.final(torch.cat([dec1, x], 1))
+
+            # Before returning, add clamping
+            output = self.final(torch.cat([dec1, x], 1))
+            output = torch.clamp(output, 0.0, 1.0)  # Clamp to valid range
 
             # Combine with original image using mask
             return output * (1 - mask) + x * mask

@@ -172,25 +172,22 @@ class ImageProcessor:
 
     def _normalize_image(self, image: np.ndarray) -> np.ndarray:
         """Normalize image values"""
-        # Ensure float32
-        image = image.astype(np.float32) / 255.0
+        # First ensure proper dtype and range [0,1]
+        if image.dtype == np.uint8:
+            image = image.astype(np.float32) / 255.0
+        else:
+            image = image.astype(np.float32)
+            if image.max() > 1.0:
+                image = image / 255.0
+
+        # Ensure image is in CHW format
+        if len(image.shape) == 3 and image.shape[-1] == 3:
+            image = np.transpose(image, (2, 0, 1))
         
-        # For HWC format (which is our input format)
-        mean = np.array(self.config.mean, dtype=np.float32)
-        std = np.array(self.config.std, dtype=np.float32)
-        
-        # Ensure image is in HWC format if not already
-        if len(image.shape) == 3 and image.shape[-1] != 3:
-            image = np.transpose(image, (1, 2, 0))
-        
-        # Apply normalization
-        mean = mean.reshape(1, 1, 3)
-        std = std.reshape(1, 1, 3)
+        # Apply ImageNet normalization
+        mean = np.array(self.config.mean, dtype=np.float32).reshape(-1, 1, 1)
+        std = np.array(self.config.std, dtype=np.float32).reshape(-1, 1, 1)
         normalized = (image - mean) / std
-        
-        # Convert to CHW format for output
-        if len(normalized.shape) == 3:
-            normalized = np.transpose(normalized, (2, 0, 1))
         
         return normalized
 
@@ -211,13 +208,16 @@ class ImageProcessor:
             if image.shape[0] == 3:
                 image = np.transpose(image, (1, 2, 0))
             
-            # Apply denormalization
-            mean = np.array(self.config.mean)
-            std = np.array(self.config.std)
+            # First clamp to reasonable range (in case model output is outside expected bounds)
+            image = np.clip(image, -3, 3)  # Typical range after ImageNet normalization
+            
+            # Reverse ImageNet normalization
+            mean = np.array(self.config.mean).reshape(1, 1, 3)
+            std = np.array(self.config.std).reshape(1, 1, 3)
             image = (image * std) + mean
             
-            # Convert to uint8
-            image = np.clip(image * 255, 0, 255).astype(np.uint8)
+            # Ensure final output is in [0, 255] range
+            image = np.clip(image * 255.0, 0, 255).astype(np.uint8)
             
             return Image.fromarray(image)
 

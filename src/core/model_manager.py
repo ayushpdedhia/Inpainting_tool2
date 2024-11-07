@@ -245,10 +245,11 @@ class ModelManager:
                 mask = mask.astype(np.float32)
                 
                 # Invert mask for processing (0 for regions to keep, 1 for regions to inpaint)
-                inv_mask = 1 - mask
+                #inv_mask = 1 - mask
                 
-                # Convert to tensor with proper dimensions
-                mask_tensor = torch.from_numpy(inv_mask).unsqueeze(0).unsqueeze(0)
+                # Just normalize the mask to [0,1] range
+                mask = mask.astype(np.float32) / 255.0 if mask.max() > 1 else mask.astype(np.float32)
+                mask_tensor = torch.from_numpy(mask).unsqueeze(0).unsqueeze(0)
 
             # Ensure float32 type
             image_tensor = image_tensor.float()
@@ -267,20 +268,33 @@ class ModelManager:
 
     def postprocess_output(self, output: torch.Tensor, original: torch.Tensor, mask: torch.Tensor) -> np.ndarray:
         """Postprocess model output"""
-        # Handle size mismatch if necessary
-        if output.shape[-2:] != original.shape[-2:]:
-            print(f"Resizing output from {output.shape[-2:]} to {original.shape[-2:]}")
-            output = F.interpolate(output, size=original.shape[-2:],
-                                mode='bilinear', align_corners=False)
-        
-        # Create composite output
-        comp = output * (1 - mask) + original * mask
-        
-        # Convert to numpy
-        result = comp.squeeze(0).permute(1, 2, 0).cpu().numpy()
-        
-        # Ensure output is in valid range
-        return np.clip(result, 0, 1)
+        with torch.no_grad():
+            # Debug before compositing
+            print("\n=== Postprocessing Debug ===")
+            print(f"Output tensor min/max: {output.min().item():.6f}, {output.max().item():.6f}")
+            print(f"Original tensor min/max: {original.min().item():.6f}, {original.max().item():.6f}")
+            print(f"Mask tensor unique values: {torch.unique(mask).cpu().numpy()}")
+            
+            # Handle size mismatch if necessary
+            if output.shape[-2:] != original.shape[-2:]:
+                output = F.interpolate(output, size=original.shape[-2:],
+                                    mode='bilinear', align_corners=False)
+            
+            # Create composite output - keep original pixels where mask is 1
+            comp = output * (1 - mask) + original * mask# Changed the mask logic here
+            
+            # Debug after compositing
+            print(f"Composite tensor min/max: {comp.min().item():.6f}, {comp.max().item():.6f}")
+            
+            # Convert to numpy and transpose to HWC
+            result = comp.squeeze(0).cpu().numpy()
+            if result.shape[0] == 3:  # If in CHW format
+                result = np.transpose(result, (1, 2, 0))
+            
+            # Debug final output
+            print(f"Final output min/max: {result.min():.6f}, {result.max():.6f}")
+                
+            return result
 
     def inpaint(self, image: np.ndarray, mask: np.ndarray, model_name: str = 'partial convolutions') -> np.ndarray:
         """
@@ -328,9 +342,19 @@ class ModelManager:
             criterion = PConvLoss(device=self.device)
             
             with torch.no_grad():
+                # Debug masks
+                print("\n=== Mask Statistics ===")
+                print(f"Input mask unique values: {np.unique(mask)}")
+                print(f"Processed mask tensor unique values: {torch.unique(mask_tensor).cpu().numpy()}")
+            
                 # Forward pass
                 output = model(image_tensor, mask_tensor)
-                
+
+                # Debug output
+                print("\n=== Output Statistics ===")
+                print(f"Output min/max values: {output.min().item():.6f}, {output.max().item():.6f}")
+                print(f"Output mean value: {output.mean().item():.6f}")
+        
                 # Debug output shape
                 print(f"Raw output shape: {output.shape}")
                 
@@ -375,6 +399,9 @@ class ModelManager:
                     raise ValueError(
                         f"Output shape {result.shape} doesn't match expected shape {expected_shape}"
                     )
+                
+                # Add comparison
+                self.compare_images(image, result, mask)
             
             return result
             
@@ -399,3 +426,74 @@ class ModelManager:
             'parameters': sum(p.numel() for p in model.parameters()),
             'device': next(model.parameters()).device
         }
+    
+    def compare_images(self, input_image: np.ndarray, output_image: np.ndarray, mask: np.ndarray) -> None:
+        """
+        Compare input and output images, focusing on the inpainted regions.
+        
+        Args:
+            input_image: Original input image
+            output_image: Generated output image
+            mask: Binary mask where 1 indicates inpainted regions
+        """
+        try:
+            # Convert input to HWC if it's in BCHW format
+            if len(input_image.shape) == 4:
+                input_image = input_image[0].transpose(1, 2, 0)
+            elif len(input_image.shape) == 3 and input_image.shape[0] == 3:
+                input_image = input_image.transpose(1, 2, 0)
+                
+            # Now both should be in HWC format
+            print(f"\nInput shape after format conversion: {input_image.shape}")
+            print(f"Output shape: {output_image.shape}")
+            
+            if input_image.shape != output_image.shape:
+                print(f"Shape mismatch after conversion: Input {input_image.shape} vs Output {output_image.shape}")
+                return
+
+            # Calculate differences
+            diff = np.abs(input_image - output_image)
+            mean_diff = np.mean(diff)
+            max_diff = np.max(diff)
+            
+            # Ensure mask is 2D if it isn't already
+            if len(mask.shape) == 3:
+                mask = mask.squeeze()
+            elif len(mask.shape) == 4:
+                mask = mask.squeeze(0).squeeze(0)
+            
+            # Calculate differences in masked region only
+            inv_mask = (mask > 127).astype(np.float32)  # Convert to binary mask
+            masked_diff = diff * inv_mask[..., None]  # Add channel dimension for broadcasting
+            masked_mean_diff = np.mean(masked_diff[inv_mask > 0]) if np.any(inv_mask > 0) else 0
+            masked_max_diff = np.max(masked_diff) if np.any(inv_mask > 0) else 0
+            
+            # Print statistics
+            print("\n=== Image Comparison Statistics ===")
+            print(f"Overall Mean Difference: {mean_diff:.6f}")
+            print(f"Overall Max Difference: {max_diff:.6f}")
+            print(f"Masked Region Mean Difference: {masked_mean_diff:.6f}")
+            print(f"Masked Region Max Difference: {masked_max_diff:.6f}")
+            
+            # Check if the differences are suspiciously low
+            if masked_mean_diff < 0.001:
+                print("\nWARNING: Very small differences detected in masked region!")
+                print("This might indicate the model is not properly inpainting.")
+                
+                # Sample some pixel values for verification
+                if np.any(inv_mask > 0):
+                    mask_coords = np.where(inv_mask > 0)
+                    sample_size = min(5, len(mask_coords[0]))
+                    if sample_size > 0:
+                        sample_indices = np.random.choice(len(mask_coords[0]), sample_size, replace=False)
+                        
+                        print("\nSample pixel values in masked region:")
+                        for idx in sample_indices:
+                            y, x = mask_coords[0][idx], mask_coords[1][idx]
+                            print(f"Position ({x}, {y}):")
+                            print(f"  Input: {input_image[y, x]}")
+                            print(f"  Output: {output_image[y, x]}")
+                            
+        except Exception as e:
+            print(f"Error in image comparison: {str(e)}")
+            print(f"Stack trace: {traceback.format_exc()}")
