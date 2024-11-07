@@ -28,6 +28,16 @@ class ImageProcessor:
                 mask: np.ndarray,
                 target_size: Optional[Tuple[int, int]] = None) -> Tuple[np.ndarray, np.ndarray]:
         try:
+            print("=== Preprocessing Dimensions ===")
+            print(f"Input Image type: {type(image)}")
+            if isinstance(image, Image.Image):
+                print(f"Input Image size: {image.size}")
+                print(f"Input Image mode: {image.mode}")
+            else:
+                print(f"Input Image shape: {image.shape}")
+            print(f"Input Mask shape: {mask.shape}")
+            print(f"Input Mask dtype: {mask.dtype}")
+
             # Convert PIL Image to numpy array if needed
             if isinstance(image, Image.Image):
                 image = np.array(image)

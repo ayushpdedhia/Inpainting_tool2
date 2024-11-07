@@ -121,6 +121,7 @@ class CanvasHandler:
         with col1:
             st.subheader("Original Image")
             resized_image = image.resize((self.canvas_size, self.canvas_size))
+            assert resized_image.size == (self.canvas_size, self.canvas_size), f"Image resize failed. Expected {self.canvas_size}x{self.canvas_size}, got {resized_image.size}"
             st.image(resized_image, width=self.canvas_size)
         
         # Drawing canvas (top right)
@@ -221,5 +222,10 @@ class CanvasHandler:
             if validate_mask(combined_mask):
                 if st.button("Process Image", key="process_button"):
                     process_clicked = True
+
+        print("=== Canvas Handler Output ===")
+        print(f"Combined Mask shape: {combined_mask.shape}")
+        print(f"Combined Mask dtype: {combined_mask.dtype}")
+        print(f"Combined Mask unique values: {np.unique(combined_mask)}")
         
         return combined_mask, process_clicked

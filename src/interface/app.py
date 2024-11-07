@@ -63,8 +63,18 @@ class InpaintingApp:
             if model_manager is None:
                 st.error("Failed to initialize model")
                 return None
+            
+            # First resize the image to match canvas size
+            image = image.resize((self.CANVAS_SIZE, self.CANVAS_SIZE), Image.Resampling.LANCZOS)
 
             # Preprocess image and mask (40%)
+            print(f"Image shape: {image.size}")  # Add this in app.py before preprocessing
+            print(f"Mask shape: {mask.shape}")   # Add this in app.py before preprocessing
+            print("=== Image and Mask Dimensions ===")
+            print(f"Original Image size (W,H): {image.size}")  # PIL Image size
+            print(f"Original Image mode: {image.mode}")        # PIL Image mode (RGB, RGBA, etc)
+            print(f"Original Mask shape: {mask.shape}")        # Numpy array shape
+            print(f"Original Mask dtype: {mask.dtype}")        # Numpy array data type
             st.write("Preprocessing image...")
             self.progress_bar.progress(40)
             try:

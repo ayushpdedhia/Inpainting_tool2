@@ -1,5 +1,6 @@
-# tests/test_model_manager.py
-
+# D:\Inpainting_tool2\tests\test_mask_generator.py
+# cd D:\Inpainting_tool2
+# python -m pytest tests/test_model_manager.py
 import pytest
 import torch
 import numpy as np
