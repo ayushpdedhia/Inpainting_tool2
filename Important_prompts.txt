@@ -194,7 +194,19 @@ Also read the structure_of_codebase.txt and goal_and_context_of_the_project for 
 Give me a 4 - 5 line summary of all the texts files ( Output_of_seven_tests.txt , structure_of_codebase.txt,  goal_and_context_of_the_project.txt) 
 
 
-So before suggesting me any changes in any files to solve the error 
-Give me the names of the files which are related to the error 
-I will upload them and also upload its tests files and its output if available 
+Context about dataset used:
+
+Read the dataset.txt which is uploaded in the knowledge content 
+
+give me a 2 summary about dataset.txt 
+
+I am asking you to give me all the summary because i want you to understand the context and goal of my project 
+
+and then in the second prompt i will give you the information about problem 
+
+then tell me which files do you need to solve the problem / error 
+
+always remember that whenever i give a problem or error tell me which files do you need to solve the error or problem 
+
+I will give you files and then you must give me the changes required 
 
