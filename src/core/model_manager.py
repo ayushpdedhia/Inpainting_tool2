@@ -221,7 +221,8 @@ class ModelManager:
                 # Convert to binary mask: white (255) → 0 (inpaint), black (0) → 1 (keep)
                 if mask.max() > 1:
                     mask = mask.astype(np.float32) / 255.0
-                mask = (mask < 0.5).astype(np.float32)  # Invert convention
+                mask = (1.0 - mask).astype(np.float32)  # Convert: 0=keep to 1=keep
+                # mask = (mask < 0.5).astype(np.float32)  # Invert convention
                 mask_tensor = torch.from_numpy(mask).unsqueeze(0).unsqueeze(0)
 
             # Convert to float32

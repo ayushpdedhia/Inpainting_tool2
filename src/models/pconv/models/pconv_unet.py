@@ -166,8 +166,8 @@ class PConvUNet(nn.Module):
                 up_feat = self.upsample(prev_feat, shape=enc_feat.shape[2:])
                 up_mask = self.upsample(prev_mask, shape=enc_feat.shape[2:])
                 
-                # Combine masks from encoder and previous decoder layer
-                cat_mask = torch.cat([up_mask, enc_mask], dim=1).mean(dim=1, keepdim=True)
+                # Combine masks - take maximum value to preserve hole information
+                cat_mask = torch.max(up_mask, enc_mask)  # Changed from mean to max
                 
                 # Concatenate features for skip connection
                 cat_feat = torch.cat([up_feat, enc_feat], dim=1)
@@ -197,7 +197,9 @@ class PConvUNet(nn.Module):
             print(f"Final mask unique values: {torch.unique(mask).cpu().numpy()}")
 
             # Final composition: use mask directly (1=keep original, 0=use generated)
-            final_output = x * mask + output * (1 - mask)
+            # Final composition: use smooth blending
+            alpha = F.sigmoid(mask * 5)  # Smoother transition
+            final_output = x * alpha + output * (1 - alpha)
 
             print(f"Composition stats:")
             print(f"Overall range: [{final_output.min():.3f}, {final_output.max():.3f}]")

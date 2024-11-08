@@ -15,7 +15,7 @@ class PConvLoss(nn.Module):
                  l1_weight=1.0,
                  hole_weight=6.0,
                  perceptual_weight=0.05,
-                 style_weight=60.0, # REDUCED from 120.0
+                 style_weight=5.0,  # Reduce from 60.0 to 5.0
                  tv_weight=0.1,
                  feat_num=4,
                  device="cuda"):

@@ -74,7 +74,12 @@ class ImageProcessor:
             processed_mask = self._resize_mask(mask, size)
 
             # Convert to binary mask: white (255) → 0 (inpaint), black (0) → 1 (keep)
-            processed_mask = (processed_mask < 127.5).astype(np.float32)
+            # First normalize mask to [0,1] range if needed
+            if processed_mask.max() > 1.0:
+                processed_mask = processed_mask.astype(np.float32) / 255.0
+
+            # Then maintain correct convention: 1=keep, 0=inpaint
+            processed_mask = processed_mask.astype(np.float32)  # Just normalize, no inversion
             
             # Debug mask conversion
             print("\n=== Mask Processing Debug ===")

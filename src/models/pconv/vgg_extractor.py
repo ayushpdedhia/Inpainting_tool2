@@ -59,8 +59,9 @@ class VGG16FeatureExtractor(nn.Module):
     @staticmethod
     def normalize_batch(batch, div_factor=255.0):
         """Normalize batch for VGG processing"""
-        if batch.max() > 1.0:
-            batch = batch.float() / div_factor
+        # Need to handle our model's output range properly
+        if batch.min() < 0 or batch.max() > 1.0:
+            batch = (batch + 2.5) / 5.0  # Normalize to [0,1] range
 
         # Remove standardization step
         # Now apply ImageNet normalization
