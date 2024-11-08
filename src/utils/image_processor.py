@@ -24,9 +24,16 @@ class ImageProcessor:
 
 
     def preprocess(self, 
-                image: Union[Image.Image, np.ndarray], 
-                mask: np.ndarray,
-                target_size: Optional[Tuple[int, int]] = None) -> Tuple[np.ndarray, np.ndarray]:
+                  image: Union[Image.Image, np.ndarray], 
+                  mask: np.ndarray,
+                  target_size: Optional[Tuple[int, int]] = None) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Preprocess image and mask for model input.
+        
+        Mask Convention:
+        Input: white (255) = areas to inpaint, black (0) = keep
+        Output: 0 = areas to inpaint, 1 = keep original
+        """
         try:
             print("=== Preprocessing Dimensions ===")
             print(f"Input Image type: {type(image)}")
@@ -37,6 +44,7 @@ class ImageProcessor:
                 print(f"Input Image shape: {image.shape}")
             print(f"Input Mask shape: {mask.shape}")
             print(f"Input Mask dtype: {mask.dtype}")
+            print(f"Input Mask unique values: {np.unique(mask)}")
 
             # Convert PIL Image to numpy array if needed
             if isinstance(image, Image.Image):
@@ -62,15 +70,32 @@ class ImageProcessor:
             processed_image = self._resize_image(image, size)
             processed_image = self._normalize_image(processed_image)
             
-            # Process mask to (1, H, W) format
+            # Process mask
             processed_mask = self._resize_mask(mask, size)
-            processed_mask = (processed_mask > 127.5).astype(np.float32)
+
+            # Convert to binary mask: white (255) → 0 (inpaint), black (0) → 1 (keep)
+            processed_mask = (processed_mask < 127.5).astype(np.float32)
+            
+            # Debug mask conversion
+            print("\n=== Mask Processing Debug ===")
+            print(f"Original mask range: [{mask.min()}, {mask.max()}]")
+            print(f"Original mask unique values: {np.unique(mask)}")
+            print(f"Processed mask range: [{processed_mask.min()}, {processed_mask.max()}]")
+            print(f"Processed mask unique values: {np.unique(processed_mask)}")
+            print(f"Mask min/max before processing: {mask.min()}, {mask.max()}")
+            print(f"Processed mask min/max: {processed_mask.min()}, {processed_mask.max()}")
+
             if len(processed_mask.shape) == 2:
                 processed_mask = np.expand_dims(processed_mask, 0)
             
             # Add batch dimension to make (B, C, H, W)
             processed_image = np.expand_dims(processed_image, 0)
             processed_mask = np.expand_dims(processed_mask, 0)
+
+            # Validate final shapes
+            print("\n=== Final Shapes ===")
+            print(f"Processed image shape: {processed_image.shape}")
+            print(f"Processed mask shape: {processed_mask.shape}")
             
             # Now shape should be (B, C, H, W)
             assert processed_image.shape[-2:] == size  # Height, Width should match target size
@@ -103,12 +128,16 @@ class ImageProcessor:
             
             # Process mask to (1, H, W) format
             proc_msk = self._resize_mask(msk, size)
-            proc_msk = (proc_msk > 127.5).astype(np.float32)
+            # Convert to binary mask: white (255) → 0 (inpaint), black (0) → 1 (keep)
+            proc_msk = (proc_msk < 127.5).astype(np.float32)
+
             if len(proc_msk.shape) == 2:
                 proc_msk = np.expand_dims(proc_msk, 0)  # Add channel dimension
                 
             processed_images.append(proc_img)
             processed_masks.append(proc_msk)
+
+            print(f"Batch item {i}: Image shape {proc_img.shape}, Mask shape {proc_msk.shape}")
         
         # Stack along batch dimension to get (B, C, H, W)
         batch_images = np.stack(processed_images, axis=0)
@@ -120,6 +149,7 @@ class ImageProcessor:
         assert batch_images.shape[0] == batch_size
         assert batch_masks.shape[0] == batch_size
         
+        print(f"\nFinal batch shapes - Images: {batch_images.shape}, Masks: {batch_masks.shape}")
         return batch_images, batch_masks
 
     def _resize_image(self, image: np.ndarray, size: Tuple[int, int]) -> np.ndarray:

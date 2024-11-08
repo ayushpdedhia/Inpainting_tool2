@@ -21,6 +21,8 @@ try:
     # Utilities
     from .utils.image_processor import ImageProcessor
     from .utils.mask_generator import MaskGenerator
+
+    from .models.pconv.vgg_extractor import VGG16FeatureExtractor
     
     __all__ = [
         # Core
@@ -35,7 +37,9 @@ try:
         
         # Utils
         'ImageProcessor',
-        'MaskGenerator'
+        'MaskGenerator',
+
+        'VGG16FeatureExtractor'
     ]
 
 except ImportError as e:

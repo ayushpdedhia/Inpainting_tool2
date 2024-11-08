@@ -5,11 +5,26 @@ from torchvision import models
 
 def gram_matrix(input_tensor):
     """Compute Gram matrix exactly as defined in the style transfer paper"""
+    print(f"\n=== Gram Matrix Computation ===")
+    print(f"Input tensor:")
+    print(f"Shape: {input_tensor.shape}")
+    print(f"Range: {input_tensor.min():.3f} to {input_tensor.max():.3f}")
+    print(f"Mean: {input_tensor.mean():.3f}")
+    
     b, ch, h, w = input_tensor.size()
     features = input_tensor.view(b, ch, h * w)
+    print(f"\nReshaped features:")
+    print(f"Shape: {features.shape}")
+    
     features_t = features.transpose(1, 2)
     gram = torch.bmm(features, features_t)
-    return gram  # Return raw gram matrix without normalization
+    
+    print(f"\nGram matrix:")
+    print(f"Shape: {gram.shape}")
+    print(f"Range: {gram.min():.3f} to {gram.max():.3f}")
+    print(f"Mean: {gram.mean():.3f}")
+    
+    return gram
 
 class VGG16FeatureExtractor(nn.Module):
     """VGG16 feature extraction with proper layer slicing"""
@@ -54,22 +69,50 @@ class VGG16FeatureExtractor(nn.Module):
 
         return (batch - mean) / std
 
-
-    
     def forward(self, x):
         """Extract features layer by layer"""
+        print("\n=== VGG Feature Extraction ===")
+        print(f"Input tensor - Shape: {x.shape}")
+        print(f"Range before normalization: {x.min():.3f} to {x.max():.3f}")
+        
         x = self.normalize_batch(x)
+        print(f"Range after normalization: {x.min():.3f} to {x.max():.3f}")
         
-        # Get features from each slice
+        # Get features with detailed debug info
+        print("\nExtracting features through VGG layers:")
         h1 = self.slice1(x)
-        h2 = self.slice2(h1)
-        h3 = self.slice3(h2)
-        h4 = self.slice4(h3)
+        print(f"\nSlice1 (relu1_2):")
+        print(f"Shape: {h1.shape}")
+        print(f"Range: {h1.min():.3f} to {h1.max():.3f}")
+        print(f"Mean activation: {h1.mean():.3f}")
         
-        # Return only requested number of layers
-        outputs = []
+        h2 = self.slice2(h1)
+        print(f"\nSlice2 (relu2_2):")
+        print(f"Shape: {h2.shape}")
+        print(f"Range: {h2.min():.3f} to {h2.max():.3f}")
+        print(f"Mean activation: {h2.mean():.3f}")
+        
+        h3 = self.slice3(h2)
+        print(f"\nSlice3 (relu3_3):")
+        print(f"Shape: {h3.shape}")
+        print(f"Range: {h3.min():.3f} to {h3.max():.3f}")
+        print(f"Mean activation: {h3.mean():.3f}")
+        
+        h4 = self.slice4(h3)
+        print(f"\nSlice4 (relu4_3):")
+        print(f"Shape: {h4.shape}")
+        print(f"Range: {h4.min():.3f} to {h4.max():.3f}")
+        print(f"Mean activation: {h4.mean():.3f}")
+        
+        # Prepare outputs
         layers = [h1, h2, h3, h4]
+        outputs = []
+        print(f"\nReturning {min(self.layer_num, 4)} feature layers")
+        
         for i in range(min(self.layer_num, 4)):
             outputs.append(layers[i])
-            
+            print(f"Layer {i+1} stats:")
+            print(f"Shape: {layers[i].shape}")
+            print(f"Range: {layers[i].min():.3f} to {layers[i].max():.3f}")
+        
         return outputs

@@ -61,6 +61,7 @@ INPAINTING_TOOL2
 │   │   ├── converter.py
 │   │   └── verify_weights.py
 |   |
+│   ├── check_gpu_and_cuda.py
 │   ├── evaluate.py
 │   ├── run_tests.bat
 │   ├── setup.sh
@@ -134,6 +135,7 @@ INPAINTING_TOOL2
 │   ├── test_mask_generator.py
 │   ├── test_model_manager.py
 │   ├── test_pconv.py
+│   ├── test_vgg_extractor.py
 │   └── test_weight_loader.py 
 |
 ├── weights

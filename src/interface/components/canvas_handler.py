@@ -22,7 +22,8 @@ class CanvasHandler:
         if 'random_mask_array' not in st.session_state:
             st.session_state.random_mask_array = None
         if 'manual_mask' not in st.session_state:
-            st.session_state.manual_mask = np.zeros((self.canvas_size, self.canvas_size), dtype=np.uint8)
+            # Initialize with all 1s (keep all pixels)
+            st.session_state.manual_mask = np.ones((self.canvas_size, self.canvas_size), dtype=np.uint8) * 255
         if 'random_mask' not in st.session_state:
             st.session_state.random_mask = None
         if 'using_random_mask' not in st.session_state:
@@ -47,28 +48,58 @@ class CanvasHandler:
             self.mask_generator = None
 
     def combine_masks(self, manual_mask, random_mask):
-        """Combine manual and random masks"""
+        """
+        Combine manual and random masks
+        
+        Mask Convention Throughout Pipeline:
+        Input from canvas: white (255) = areas to inpaint, black (0) = keep
+        Binary mask: 0 = inpaint, 1 = keep original
+        """
+        # Debug input masks
+        print("\n=== Combining Masks ===")
+        print(f"Manual mask range: {np.min(manual_mask) if manual_mask is not None else 'None'} to {np.max(manual_mask) if manual_mask is not None else 'None'}")
+        print(f"Random mask range: {np.min(random_mask) if random_mask is not None else 'None'} to {np.max(random_mask) if random_mask is not None else 'None'}")
+
         # Convert manual mask to proper format
         if manual_mask is not None:
-            manual_mask_binary = manual_mask.astype(np.uint8)
+            # Convert to binary where:
+            # Canvas input: white (255) → 0 (inpaint)
+            #              black (0)   → 1 (keep)
+            manual_mask_binary = (manual_mask < 127).astype(np.float32)
         else:
-            manual_mask_binary = np.zeros((self.canvas_size, self.canvas_size), dtype=np.uint8)
+            # Default to all 1s (keep all pixels)
+            manual_mask_binary = np.ones((self.canvas_size, self.canvas_size), dtype=np.float32)
 
         # Convert random mask to proper format
         if random_mask is not None:
-            random_mask_binary = (random_mask * 255).astype(np.uint8)
+            random_mask_binary = random_mask.astype(np.float32)
             if len(random_mask_binary.shape) == 3:
                 random_mask_binary = random_mask_binary[:, :, 0]
+            # Normalize to [0, 1] if needed
+            if random_mask_binary.max() > 1:
+                random_mask_binary = (random_mask_binary < 127).astype(np.float32)
         else:
-            random_mask_binary = np.zeros_like(manual_mask_binary)
+            # Default to all 1s (keep all pixels)
+            random_mask_binary = np.ones_like(manual_mask_binary)
 
-        # Print debug info
-        print(f"Manual mask shape: {manual_mask_binary.shape}, type: {manual_mask_binary.dtype}")
-        print(f"Random mask shape: {random_mask_binary.shape}, type: {random_mask_binary.dtype}")
+        # Debug converted masks
+        print("\n=== Converted Masks ===")
+        print(f"Manual mask binary unique values: {np.unique(manual_mask_binary)}")
+        print(f"Random mask binary unique values: {np.unique(random_mask_binary)}")
 
-        # Combine masks using bitwise OR
-        combined = cv2.bitwise_or(manual_mask_binary, random_mask_binary)
-        print(f"Combined mask shape: {combined.shape}, type: {combined.dtype}")
+        # Combine masks - use minimum because if either mask says to inpaint (0),
+        # we want the final result to be 0 (inpaint)
+        combined = np.minimum(manual_mask_binary, random_mask_binary)
+
+        # Debug final combined mask
+        print("\n=== Combined Mask ===")
+        print(f"Shape: {combined.shape}, dtype: {combined.dtype}")
+        print(f"Unique values: {np.unique(combined)}")
+        print(f"Min: {combined.min()}, Max: {combined.max()}")
+
+        # Validate mask values
+        assert combined.min() >= 0 and combined.max() <= 1, "Mask values must be in [0,1] range"
+        
         return combined
 
     def process_canvas_result(self, canvas_result: Dict) -> Optional[np.ndarray]:
@@ -78,10 +109,11 @@ class CanvasHandler:
                 return self._last_generated_mask
             return None
             
+        # Initialize with black (keep all pixels)
         mask_display = np.zeros((self.canvas_size, self.canvas_size), dtype=np.uint8)
         
         if canvas_result.json_data is not None and "objects" in canvas_result.json_data:
-            # Handle rectangle drawing
+            # Handle rectangle drawing - fill with white (255) for areas to inpaint
             for obj in canvas_result.json_data["objects"]:
                 if obj["type"] == "rect":
                     x = int(obj["left"])
@@ -90,7 +122,7 @@ class CanvasHandler:
                     h = int(obj["height"])
                     cv2.rectangle(mask_display, (x, y), (x+w, y+h), 255, -1)
         else:
-            # Handle freedraw
+            # Handle freedraw - white (255) = inpaint, black (0) = keep
             mask_display = canvas_result.image_data[:, :, -1]
         
         return mask_display
@@ -181,9 +213,10 @@ class CanvasHandler:
         
         # Process manual mask
         if canvas_result is not None and canvas_result.image_data is not None:
-            print("Processing canvas input")
+            print("\n=== Processing Canvas Input ===")
             if controls['drawing_mode'] == "freedraw":
                 st.session_state.manual_mask = canvas_result.image_data[:, :, -1]
+                print(f"Freedraw mask unique values: {np.unique(st.session_state.manual_mask)}")
             elif controls['drawing_mode'] == "rect" and canvas_result.json_data is not None:
                 st.session_state.manual_mask = np.zeros((self.canvas_size, self.canvas_size), dtype=np.uint8)
                 for obj in canvas_result.json_data.get("objects", []):
@@ -193,6 +226,7 @@ class CanvasHandler:
                         w = int(obj["width"])
                         h = int(obj["height"])
                         cv2.rectangle(st.session_state.manual_mask, (x, y), (x+w, y+h), 255, -1)
+                print(f"Rectangle mask unique values: {np.unique(st.session_state.manual_mask)}")
 
         # Combine masks using session state
         combined_mask = self.combine_masks(

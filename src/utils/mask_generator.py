@@ -28,7 +28,17 @@ class MaskConfig:
             }
 
 class MaskGenerator:
-    """Generates random irregular masks for image inpainting"""
+    """
+    Generates random irregular masks for image inpainting.
+    
+    Mask Convention:
+    - Generated mask values:
+        0 = areas to inpaint (holes)
+        1 = areas to keep (valid regions)
+    - When loading external masks:
+        white (255) = areas to inpaint
+        black (0) = areas to keep
+    """
 
     def __init__(self, 
                  height: int, 
@@ -102,7 +112,9 @@ class MaskGenerator:
             random_seed: Optional random seed for this specific sample
             
         Returns:
-            A binary mask array of shape (height, width, channels)
+            np.ndarray: Binary mask where:
+                       0 = areas to inpaint
+                       1 = areas to keep original
         """
         if random_seed is not None:
             self.rng = np.random.RandomState(random_seed)
@@ -113,59 +125,81 @@ class MaskGenerator:
             mask = self._load_random_mask()
         else:
             mask = self._generate_random_mask()
+
+        # Debug output
+        print("\n=== Generated Mask Stats ===")
+        print(f"Shape: {mask.shape}")
+        print(f"Range: [{mask.min()}, {mask.max()}]")
+        print(f"Unique values: {np.unique(mask)}")
+        print(f"Inpaint area: {np.mean(mask == 0) * 100:.1f}%")
         
         return mask.squeeze()
         
 
     def _generate_random_mask(self) -> np.ndarray:
-        """Generate a random irregular mask using OpenCV"""
-        mask = np.zeros((self.height, self.width, self.channels), np.uint8)
+        """
+        Generate a random irregular mask.
+        
+        Returns:
+            np.ndarray: Binary mask where:
+                       0 = inpaint regions (holes)
+                       1 = keep original
+        """
+        # Initialize mask with all ones (keep everything)
+        mask = np.ones((self.height, self.width, self.channels), np.uint8)
         
         # Generate random shapes
         num_shapes = self.rng.randint(self.config.min_num_shapes, self.config.max_num_shapes + 1)
+        print(f"\nGenerating {num_shapes} random shapes")
         
-        for _ in range(num_shapes):
-            # Use rng for consistent random choices
+        for i in range(num_shapes):
             shape_type = self.rng.choice(
                 list(self.config.shape_probability.keys()),
                 p=list(self.config.shape_probability.values())
             )
             
-            # Generate shape
+            # Draw shape (sets pixels to 0 where we want to inpaint)
             if shape_type == 'line':
                 self._draw_random_line(mask)
             elif shape_type == 'circle':
                 self._draw_random_circle(mask)
             elif shape_type == 'ellipse':
                 self._draw_random_ellipse(mask)
+
+            # Debug output for each shape
+            if i == 0 or i == num_shapes-1:  # Only print first and last for brevity
+                print(f"Shape {i+1}: {shape_type}")
+                print(f"Mask range: [{mask.min()}, {mask.max()}]")
+                print(f"Inpaint area: {np.mean(mask == 0) * 100:.1f}%")
+
         
-        return 1 - mask
+        return mask
 
     def _draw_random_line(self, mask: np.ndarray):
-        """Draw a random line on the mask"""
+        """Draw a random line on the mask (sets line pixels to 0)"""
         x1 = self.rng.randint(1, self.width)
         x2 = self.rng.randint(1, self.width)
         y1 = self.rng.randint(1, self.height)
         y2 = self.rng.randint(1, self.height)
         thickness = self.rng.randint(self.config.min_shape_size, self.config.max_shape_size + 1)
-        cv2.line(mask, (x1, y1), (x2, y2), (1,) * self.channels, thickness)
+        cv2.line(mask, (x1, y1), (x2, y2), (0,) * self.channels, thickness)  # Use 0 for inpaint
 
     def _draw_random_circle(self, mask: np.ndarray):
-        """Draw a random circle on the mask"""
+        """Draw a random circle on the mask (sets circle pixels to 0)"""
         x1 = self.rng.randint(1, self.width)
         y1 = self.rng.randint(1, self.height)
         radius = self.rng.randint(self.config.min_shape_size, self.config.max_shape_size + 1)
-        cv2.circle(mask, (x1, y1), radius, (1,) * self.channels, -1)
+        cv2.circle(mask, (x1, y1), radius, (0,) * self.channels, -1)  # Use 0 for inpaint
 
     def _draw_random_ellipse(self, mask: np.ndarray):
-        """Draw a random ellipse on the mask"""
+        """Draw a random ellipse on the mask (sets ellipse pixels to 0)"""
         x1 = self.rng.randint(1, self.width)
         y1 = self.rng.randint(1, self.height)
         s1 = self.rng.randint(1, self.width)
         s2 = self.rng.randint(1, self.height)
         a1, a2, a3 = [self.rng.randint(3, 180) for _ in range(3)]
         thickness = self.rng.randint(self.config.min_shape_size, self.config.max_shape_size + 1)
-        cv2.ellipse(mask, (x1, y1), (s1, s2), a1, a2, a3, (1,) * self.channels, thickness)
+        cv2.ellipse(mask, (x1, y1), (s1, s2), a1, a2, a3, (0,) * self.channels, thickness)  # Use 0 for inpaint
 
     def _load_mask_files(self) -> List[str]:
         """Load all mask files from the specified directory"""
@@ -180,19 +214,34 @@ class MaskGenerator:
         ]
 
     def _load_random_mask(self) -> np.ndarray:
-        """Load and process a random mask from the mask directory"""
+        """
+        Load and process a random mask from the mask directory.
+        
+        Returns:
+            np.ndarray: Binary mask where:
+                       0 = inpaint regions (holes)
+                       1 = keep original
+        """
         mask_path = random.choice(self.mask_files)
         mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+        
+        print(f"\n=== Loading Mask: {os.path.basename(mask_path)} ===")
+        print(f"Original shape: {mask.shape}")
+        print(f"Original range: [{mask.min()}, {mask.max()}]")
         
         # Resize if necessary
         if mask.shape[:2] != (self.height, self.width):
             mask = cv2.resize(mask, (self.width, self.height), interpolation=cv2.INTER_NEAREST)
         
-        # Binarize
-        mask = (mask > 127.5).astype(np.uint8)
+        # Convert white (255) to 0 (inpaint) and black (0) to 1 (keep)
+        mask = (mask < 127.5).astype(np.uint8)
         
-        # Add channels dimension if needed
+        # Add channels if needed
         if self.channels > 1:
             mask = np.stack([mask] * self.channels, axis=-1)
-            
+        
+        print(f"Processed shape: {mask.shape}")
+        print(f"Processed range: [{mask.min()}, {mask.max()}]")
+        print(f"Inpaint area: {np.mean(mask == 0) * 100:.1f}%")
+        
         return mask

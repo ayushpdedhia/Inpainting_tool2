@@ -167,23 +167,18 @@ class ModelManager:
     def preprocess_inputs(self, image: np.ndarray, mask: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Preprocess numpy inputs to torch tensors.
-        Handles both BCHW and HWC input formats.
         
-        Args:
-            image (np.ndarray): Input image in numpy format with shape [H, W, C] or [B, C, H, W],
-                            where C=3 for RGB images. Values should be in range [0, 1].
-            mask (np.ndarray): Binary mask with shape [H, W], [H, W, 1], or [B, 1, H, W],
-                            where 1 indicates regions to keep and 0 indicates regions to inpaint.
-                            
-        Returns:
-            Tuple[torch.Tensor, torch.Tensor]: Preprocessed image and mask tensors with shapes 
-            [1, C, H, W] and [1, 1, H, W] respectively.
-            
-        Raises:
-            ValueError: If inputs don't match expected formats, shapes, or value ranges.
-            TypeError: If inputs aren't numpy arrays.
+        Mask Convention:
+        Input from canvas/processor: white (255) = inpaint, black (0) = keep
+        Output tensor: 0 = inpaint, 1 = keep original
         """
         try:
+            # Debug input state
+            print("\n=== Preprocessing Input Stats ===")
+            print(f"Image - Shape: {image.shape}, Range: [{np.min(image)}, {np.max(image)}]")
+            print(f"Mask - Shape: {mask.shape}, Range: [{np.min(mask)}, {np.max(mask)}]")
+            print(f"Mask unique values: {np.unique(mask)}")
+
             # Type validation
             if not isinstance(image, np.ndarray):
                 raise TypeError(f"Expected image to be numpy array, got {type(image)}")
@@ -194,70 +189,51 @@ class ModelManager:
             print(f"Input image shape: {image.shape}")
             print(f"Input mask shape: {mask.shape}")
 
-            # Handle both BCHW and HWC formats for image
+            # Handle image format
             if len(image.shape) == 4:  # BCHW format
                 if image.shape[1] != 3:
-                    raise ValueError(f"Expected 3 channels (RGB) for image, got {image.shape[1]}")
-                # Take first batch if batched
+                    raise ValueError(f"Expected 3 channels (RGB), got {image.shape[1]}")
                 image = image[0] if image.shape[0] > 1 else image
                 image_tensor = torch.from_numpy(image)
             else:  # HWC format
-                # Shape validation
-                if len(image.shape) != 3:
-                    raise ValueError(f"Expected image with shape [H, W, C], got {image.shape}")
-                if image.shape[2] != 3:
-                    raise ValueError(f"Expected 3 channels (RGB) for image, got {image.shape[2]}")
-                
-                # Value range validation
+                if len(image.shape) != 3 or image.shape[2] != 3:
+                    raise ValueError(f"Expected shape [H,W,3], got {image.shape}")
                 if np.min(image) < 0 or np.max(image) > 1:
-                    raise ValueError(f"Image values must be in range [0, 1], got range [{np.min(image)}, {np.max(image)}]")
-                
-                # Convert HWC to BCHW
+                    raise ValueError(f"Image values must be in [0,1], got [{np.min(image)}, {np.max(image)}]")
                 image = image.astype(np.float32)
                 image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0)
 
             # Handle mask format
             if len(mask.shape) == 4:  # BCHW format
                 mask = mask[0] if mask.shape[0] > 1 else mask
-                if mask.shape[1] != 1:
-                    mask = mask[:1]  # Take first channel if multi-channel
+                mask = mask[:1] if mask.shape[1] != 1 else mask
                 mask_tensor = torch.from_numpy(mask)
             else:
-                # Ensure mask is 2D
-                if len(mask.shape) == 3:
-                    mask = mask.squeeze(-1)
-                elif len(mask.shape) != 2:
-                    raise ValueError(f"Expected mask with shape [H, W] or [H, W, 1], got {mask.shape}")
+                # Convert to 2D if needed
+                mask = mask.squeeze() if len(mask.shape) == 3 else mask
+                if len(mask.shape) != 2:
+                    raise ValueError(f"Expected 2D mask, got shape {mask.shape}")
                 
-                # Value range validation for mask
-                if np.min(mask) < 0 or np.max(mask) > 1:
-                    raise ValueError(f"Mask values must be in range [0, 1], got range [{np.min(mask)}, {np.max(mask)}]")
+                # Ensure matching dimensions
+                if mask.shape != (image_tensor.shape[2], image_tensor.shape[3]):
+                    raise ValueError(f"Mask shape {mask.shape} doesn't match image {(image_tensor.shape[2], image_tensor.shape[3])}")
                 
-                # Dimension matching
-                img_h, img_w = image_tensor.shape[-2:]
-                mask_h, mask_w = mask.shape
-                if img_h != mask_h or img_w != mask_w:
-                    raise ValueError(
-                        f"Image dimensions ({img_h}, {img_w}) must match mask dimensions ({mask_h}, {mask_w})"
-                    )
-
-                # Convert to float32
-                mask = mask.astype(np.float32)
-                
-                # Invert mask for processing (0 for regions to keep, 1 for regions to inpaint)
-                #inv_mask = 1 - mask
-                
-                # Just normalize the mask to [0,1] range
-                mask = mask.astype(np.float32) / 255.0 if mask.max() > 1 else mask.astype(np.float32)
+                # Convert to binary mask: white (255) → 0 (inpaint), black (0) → 1 (keep)
+                if mask.max() > 1:
+                    mask = mask.astype(np.float32) / 255.0
+                mask = (mask < 0.5).astype(np.float32)  # Invert convention
                 mask_tensor = torch.from_numpy(mask).unsqueeze(0).unsqueeze(0)
 
-            # Ensure float32 type
+            # Convert to float32
             image_tensor = image_tensor.float()
             mask_tensor = mask_tensor.float()
+    
 
             # Print tensor shapes for debugging
-            print(f"Preprocessed image tensor shape: {image_tensor.shape}")
-            print(f"Preprocessed mask tensor shape: {mask_tensor.shape}")
+            print("\n=== Preprocessed Tensor Stats ===")
+            print(f"Image tensor - Shape: {image_tensor.shape}, Range: [{image_tensor.min():.3f}, {image_tensor.max():.3f}]")
+            print(f"Mask tensor - Shape: {mask_tensor.shape}, Range: [{mask_tensor.min():.3f}, {mask_tensor.max():.3f}]")
+            print(f"Mask tensor unique values: {torch.unique(mask_tensor).cpu().numpy()}")
 
             return image_tensor, mask_tensor
 
@@ -267,32 +243,39 @@ class ModelManager:
             raise
 
     def postprocess_output(self, output: torch.Tensor, original: torch.Tensor, mask: torch.Tensor) -> np.ndarray:
-        """Postprocess model output"""
+        """
+        Postprocess model output.
+        
+        Mask convention:
+        1 = keep original pixels
+        0 = use inpainted pixels
+        """
         with torch.no_grad():
             # Debug before compositing
             print("\n=== Postprocessing Debug ===")
-            print(f"Output tensor min/max: {output.min().item():.6f}, {output.max().item():.6f}")
-            print(f"Original tensor min/max: {original.min().item():.6f}, {original.max().item():.6f}")
-            print(f"Mask tensor unique values: {torch.unique(mask).cpu().numpy()}")
+            print(f"Output tensor - Range: [{output.min():.3f}, {output.max():.3f}]")
+            print(f"Original tensor - Range: [{original.min():.3f}, {original.max():.3f}]")
+            print(f"Mask tensor - Range: [{mask.min():.3f}, {mask.max():.3f}]")
+            print(f"Mask unique values: {torch.unique(mask).cpu().numpy()}")
             
-            # Handle size mismatch if necessary
+            # Handle size mismatch
             if output.shape[-2:] != original.shape[-2:]:
                 output = F.interpolate(output, size=original.shape[-2:],
                                     mode='bilinear', align_corners=False)
-            
-            # Create composite output - keep original pixels where mask is 1
-            comp = output * (1 - mask) + original * mask# Changed the mask logic here
-            
+
+            # Compose output: mask=1 keeps original, mask=0 uses inpainted
+            comp = original * mask + output * (1 - mask)
             # Debug after compositing
-            print(f"Composite tensor min/max: {comp.min().item():.6f}, {comp.max().item():.6f}")
+            print(f"Composition - Range: [{comp.min():.3f}, {comp.max():.3f}]")
+            print(f"Original regions - Range: [{(comp * mask).min():.3f}, {(comp * mask).max():.3f}]")
+            print(f"Inpainted regions - Range: [{(comp * (1-mask)).min():.3f}, {(comp * (1-mask)).max():.3f}]")
             
             # Convert to numpy and transpose to HWC
             result = comp.squeeze(0).cpu().numpy()
-            if result.shape[0] == 3:  # If in CHW format
-                result = np.transpose(result, (1, 2, 0))
+            result = np.transpose(result, (1, 2, 0)) if result.shape[0] == 3 else result
             
             # Debug final output
-            print(f"Final output min/max: {result.min():.6f}, {result.max():.6f}")
+            print(f"Final output - Shape: {result.shape}, Range: [{result.min():.3f}, {result.max():.3f}]")
                 
             return result
 
@@ -429,12 +412,11 @@ class ModelManager:
     
     def compare_images(self, input_image: np.ndarray, output_image: np.ndarray, mask: np.ndarray) -> None:
         """
-        Compare input and output images, focusing on the inpainted regions.
+        Compare input and output images.
         
-        Args:
-            input_image: Original input image
-            output_image: Generated output image
-            mask: Binary mask where 1 indicates inpainted regions
+        Mask convention:
+        1 = valid/original regions
+        0 = inpainted regions
         """
         try:
             # Convert input to HWC if it's in BCHW format
@@ -443,12 +425,12 @@ class ModelManager:
             elif len(input_image.shape) == 3 and input_image.shape[0] == 3:
                 input_image = input_image.transpose(1, 2, 0)
                 
-            # Now both should be in HWC format
-            print(f"\nInput shape after format conversion: {input_image.shape}")
+            print("\n=== Image Comparison ===")
+            print(f"Input shape: {input_image.shape}")
             print(f"Output shape: {output_image.shape}")
             
             if input_image.shape != output_image.shape:
-                print(f"Shape mismatch after conversion: Input {input_image.shape} vs Output {output_image.shape}")
+                print(f"Shape mismatch: Input {input_image.shape} vs Output {output_image.shape}")
                 return
 
             # Calculate differences
@@ -456,43 +438,36 @@ class ModelManager:
             mean_diff = np.mean(diff)
             max_diff = np.max(diff)
             
-            # Ensure mask is 2D if it isn't already
-            if len(mask.shape) == 3:
-                mask = mask.squeeze()
-            elif len(mask.shape) == 4:
-                mask = mask.squeeze(0).squeeze(0)
+            # Ensure 2D mask
+            mask = mask.squeeze()
+            mask = (mask < 0.5).astype(np.float32)  # Convert to binary: 0=inpaint, 1=keep
             
-            # Calculate differences in masked region only
-            inv_mask = (mask > 127).astype(np.float32)  # Convert to binary mask
-            masked_diff = diff * inv_mask[..., None]  # Add channel dimension for broadcasting
-            masked_mean_diff = np.mean(masked_diff[inv_mask > 0]) if np.any(inv_mask > 0) else 0
-            masked_max_diff = np.max(masked_diff) if np.any(inv_mask > 0) else 0
+            # Calculate differences in inpainted regions (mask=0)
+            inpaint_diff = diff * (1 - mask)[..., None]
+            inpaint_mean = np.mean(inpaint_diff[mask < 0.5]) if np.any(mask < 0.5) else 0
+            inpaint_max = np.max(inpaint_diff) if np.any(mask < 0.5) else 0
             
             # Print statistics
-            print("\n=== Image Comparison Statistics ===")
-            print(f"Overall Mean Difference: {mean_diff:.6f}")
-            print(f"Overall Max Difference: {max_diff:.6f}")
-            print(f"Masked Region Mean Difference: {masked_mean_diff:.6f}")
-            print(f"Masked Region Max Difference: {masked_max_diff:.6f}")
+            print("\n=== Difference Statistics ===")
+            print(f"Overall - Mean: {mean_diff:.6f}, Max: {max_diff:.6f}")
+            print(f"Inpainted regions - Mean: {inpaint_mean:.6f}, Max: {inpaint_max:.6f}")
             
-            # Check if the differences are suspiciously low
-            if masked_mean_diff < 0.001:
-                print("\nWARNING: Very small differences detected in masked region!")
-                print("This might indicate the model is not properly inpainting.")
+            # Check for potential issues
+            if inpaint_mean < 0.001:
+                print("\nWARNING: Very small differences in inpainted regions")
+                print("This might indicate improper inpainting")
                 
-                # Sample some pixel values for verification
-                if np.any(inv_mask > 0):
-                    mask_coords = np.where(inv_mask > 0)
-                    sample_size = min(5, len(mask_coords[0]))
-                    if sample_size > 0:
-                        sample_indices = np.random.choice(len(mask_coords[0]), sample_size, replace=False)
+                # Sample some inpainted pixels
+                if np.any(mask < 0.5):
+                    coords = np.where(mask < 0.5)
+                    samples = np.random.choice(len(coords[0]), min(5, len(coords[0])), replace=False)
                         
-                        print("\nSample pixel values in masked region:")
-                        for idx in sample_indices:
-                            y, x = mask_coords[0][idx], mask_coords[1][idx]
-                            print(f"Position ({x}, {y}):")
-                            print(f"  Input: {input_image[y, x]}")
-                            print(f"  Output: {output_image[y, x]}")
+                    print("\nSample pixel comparisons:")
+                    for idx in samples:
+                        y, x = coords[0][idx], coords[1][idx]
+                        print(f"Position ({x}, {y}):")
+                        print(f"  Input: {input_image[y, x]}")
+                        print(f"  Output: {output_image[y, x]}")
                             
         except Exception as e:
             print(f"Error in image comparison: {str(e)}")

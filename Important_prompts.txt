@@ -125,6 +125,7 @@ D:\Inpainting_tool2\src\models\pconv\layers\partialconv2d.py
 All the above mentioned files are uploaded in the knowledge content 
 read them carefully 
 give me a one line summary of the above files so that I know you have read all the files 
+Also tell me if you understand the connections of file 
 
 Context about pretrained weights:
 Now the code must use the pre-trained weights saved in the below paths mentioned 
@@ -181,13 +182,14 @@ i ran the 7 test files one by one
 │   ├── test_mask_generator.py
 │   ├── test_model_manager.py
 │   ├── test_pconv.py
+│   ├── test_vgg_extractor.py
 │   └── test_weight_loader.py 
 
 The output of the above files is uploaded in D:\Inpainting_tool2\tests\Output_of_seven_tests.txt
 Output_of_seven_tests.txt is uploaded in knowledge content 
 
 If you want i can also upload the below files 
-test_config.py , test_data_loader.py , test_image_processor.py , test_mask_generator.py , test_model_manager.py , test_pconv.py ,test_weight_loader.py 
+test_config.py , test_data_loader.py , test_image_processor.py , test_mask_generator.py , test_model_manager.py , test_pconv.py ,test_weight_loader.py , test_vgg_extractor.py
 
 Also read the structure_of_codebase.txt and goal_and_context_of_the_project for better understanding 
 

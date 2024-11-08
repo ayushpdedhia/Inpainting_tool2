@@ -49,52 +49,100 @@ class PartialConv2d(nn.Conv2d):
         self.mask_ratio = None
 
     def forward(self, input, mask_in=None):
+        """
+        Forward pass of Partial Convolution.
+        
+        Mask Convention:
+        - mask_in: 1 = keep original pixels, 0 = holes to be filled
+        - internal: work directly with the mask (no inversions needed)
+        - output: maintain same convention as input
+        
+        Args:
+            input: Input tensor [B, C, H, W]
+            mask_in: Binary mask tensor [B, 1, H, W] where:
+                    1 = valid pixels (keep original)
+                    0 = holes (to be filled)
+        """
+
+        # Debug input stats
+        print("\n=== PConv Layer Input Stats ===")
+        print(f"Input tensor - Shape: {input.shape}")
+        print(f"Input range: [{input.min():.3f}, {input.max():.3f}]")
+        if mask_in is not None:
+            print(f"Input mask - Shape: {mask_in.shape}")
+            print(f"Mask range: [{mask_in.min():.3f}, {mask_in.max():.3f}]")
+            print(f"Mask unique values: {torch.unique(mask_in)}")
+        
         # Handle no-mask case first
         if mask_in is None:
-            # Important: Return only convolution output for no-mask case
             return super(PartialConv2d, self).forward(input)
         
-        assert len(input.shape) == 4
+        assert len(input.shape) == 4, "Input should be a 4D tensor"
+
+        # Use input mask directly - no need to invert
+        mask = mask_in.clone()  # Clone to avoid modifying original mask
         
-        # Create mask if none provided
-        if mask_in is None:
-            mask = torch.ones(input.data.shape[0], 1, 
-                            input.data.shape[2], input.data.shape[3]).to(input)
-        else:
-            mask = mask_in
-            
-        # Update mask and compute mask ratio
+
+        # Update mask and compute mask ratio only if needed
         if mask_in is not None or self.last_size != tuple(input.shape):
             self.last_size = tuple(input.shape)
+            print(f"PConv input mask unique values: {torch.unique(mask_in)}")
 
             with torch.no_grad():
+                # Ensure weight_maskUpdater is on correct device
                 if self.weight_maskUpdater.type() != input.type():
                     self.weight_maskUpdater = self.weight_maskUpdater.to(input)
 
-                self.update_mask = F.conv2d(mask, self.weight_maskUpdater, 
-                                        bias=None, stride=self.stride, 
-                                        padding=self.padding, dilation=self.dilation, 
-                                        groups=1)
+                # Compute update mask directly from input mask
+                # No inversion needed - process valid regions directly
+                self.update_mask = F.conv2d(mask,
+                                          self.weight_maskUpdater,
+                                          bias=None,
+                                          stride=self.stride,
+                                          padding=self.padding,
+                                          dilation=self.dilation)
 
-                self.mask_ratio = self.slide_winsize/(self.update_mask + 1e-8)
+                # Update mask ratio for proper scaling
+                self.mask_ratio = self.slide_winsize / (self.update_mask + 1e-6)
                 self.update_mask = torch.clamp(self.update_mask, 0, 1)
                 self.mask_ratio = torch.mul(self.mask_ratio, self.update_mask)
 
-        # Apply convolution to masked input
-        raw_out = super(PartialConv2d, self).forward(torch.mul(input, mask))
+                # Debug updated mask
+                print("\n=== Mask Update Stats ===")
+                print(f"Update mask range: [{self.update_mask.min():.3f}, {self.update_mask.max():.3f}]")
+                print(f"Update mask unique values: {torch.unique(self.update_mask)}")
+                print(f"Mask ratio range: [{self.mask_ratio.min():.3f}, {self.mask_ratio.max():.3f}]")
 
-        # Apply bias if present
-        if self.bias is not None:
-            bias_view = self.bias.view(1, self.out_channels, 1, 1)
-            output = torch.mul(raw_out - bias_view, self.mask_ratio) + bias_view
-            output = torch.mul(output, self.update_mask)
-        else:
-            output = torch.mul(raw_out, self.mask_ratio)
+            # Apply convolution to valid regions (where mask = 1)
+            masked_input = torch.mul(input, mask)
+            raw_out = super(PartialConv2d, self).forward(masked_input)
 
-        # Return output with or without mask
-        if self.return_mask:
-            if self.multi_channel:
-                self.update_mask = self.update_mask.mean(dim=1, keepdim=True)
-            return output, self.update_mask
-        else:
-            return output
+            # Compute output features
+            if self.bias is not None:
+                bias_view = self.bias.view(1, self.out_channels, 1, 1)
+                # Process valid regions
+                feature_output = torch.mul(raw_out - bias_view, self.mask_ratio) + bias_view
+                # Process hole regions
+                hole_output = torch.mul(raw_out - bias_view, 1 - self.mask_ratio) + bias_view
+                # Combine based on update mask
+                output = feature_output * self.update_mask + hole_output * (1 - self.update_mask)
+            else:
+                feature_output = torch.mul(raw_out, self.mask_ratio)
+                hole_output = torch.mul(raw_out, 1 - self.mask_ratio)
+                output = feature_output * self.update_mask + hole_output * (1 - self.update_mask)
+
+            # Debug output stats
+            print("\n=== Layer Output Stats ===")
+            print(f"Output tensor range: [{output.min():.3f}, {output.max():.3f}]")
+
+            # Return output and mask
+            if self.return_mask:
+                if self.multi_channel:
+                    final_mask = self.update_mask.mean(dim=1, keepdim=True)
+                else:
+                    final_mask = self.update_mask
+                print(f"Output mask unique values: {torch.unique(final_mask)}")
+                # Return mask directly - maintain input convention
+                return output, final_mask
+            else:
+                return output

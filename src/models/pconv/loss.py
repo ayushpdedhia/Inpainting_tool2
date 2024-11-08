@@ -15,7 +15,7 @@ class PConvLoss(nn.Module):
                  l1_weight=1.0,
                  hole_weight=6.0,
                  perceptual_weight=0.05,
-                 style_weight=120.0,
+                 style_weight=60.0, # REDUCED from 120.0
                  tv_weight=0.1,
                  feat_num=4,
                  device="cuda"):
@@ -59,46 +59,73 @@ class PConvLoss(nn.Module):
             total_loss: Combined loss value
             loss_dict: Dictionary containing individual loss components
         """
+
+        print("\n=== PConvLoss Forward Pass ===")
+        print(f"Input tensors shapes:")
+        print(f"Output: {output.shape}, Range: {output.min():.3f} to {output.max():.3f}")
+        print(f"Target: {target.shape}, Range: {target.min():.3f} to {target.max():.3f}")
+        print(f"Mask: {mask.shape}, Range: {mask.min():.3f} to {mask.max():.3f}")
+
         # Valid area and hole losses
         l_valid = torch.mean(torch.abs(mask * (output - target)))
         l_hole = torch.mean(torch.abs((1 - mask) * (output - target)))
+        print(f"\nInitial Losses:")
+        print(f"Valid Loss: {l_valid.item():.6f}")
+        print(f"Hole Loss: {l_hole.item():.6f}")
         
         # Composite output
         comp = output * (1 - mask) + target * mask
+        print(f"\nComposite Output:")
+        print(f"Shape: {comp.shape}, Range: {comp.min():.3f} to {comp.max():.3f}")
         
         # Get normalized VGG features
         output_feats = self.vgg(output)
         with torch.no_grad():
             target_feats = self.vgg(target)
         comp_feats = self.vgg(comp)
+
+        print(f"\n[Loss Debug] VGG feature stats:")
+        print(f"Number of feature layers: {len(output_feats)}")
+        for idx, (out_f, targ_f, comp_f) in enumerate(zip(output_feats, target_feats, comp_feats)):
+            print(f"\nLayer {idx+1} stats:")
+            print(f"Output features - Shape: {out_f.shape}, Mean: {out_f.mean():.3f}")
+            print(f"Target features - Shape: {targ_f.shape}, Mean: {targ_f.mean():.3f}")
+            print(f"Comp features - Shape: {comp_f.shape}, Mean: {comp_f.mean():.3f}")
         
         # Perceptual loss
         l_perceptual = 0
-        for out_feat, comp_feat, target_feat in zip(output_feats, comp_feats, target_feats):
-            l_perceptual += self.l1_loss(out_feat, target_feat)
-            l_perceptual += self.l1_loss(comp_feat, target_feat)
-            
-        # Style loss with efficient Gram matrix
+        print("\nCalculating Perceptual Loss:")
+        for i, (out_feat, comp_feat, target_feat) in enumerate(zip(output_feats, comp_feats, target_feats)):
+            out_loss = self.l1_loss(out_feat, target_feat)
+            comp_loss = self.l1_loss(comp_feat, target_feat)
+            l_perceptual += (out_loss + comp_loss)
+            print(f"Layer {i+1} - Out Loss: {out_loss.item():.6f}, Comp Loss: {comp_loss.item():.6f}")
+        
+        # Style loss
         l_style = 0
-        for out_feat, comp_feat, target_feat in zip(output_feats, comp_feats, target_feats):
+        print("\nCalculating Style Loss:")
+        for i, (out_feat, comp_feat, target_feat) in enumerate(zip(output_feats, comp_feats, target_feats)):
             target_gram = gram_matrix(target_feat)
             out_gram = gram_matrix(out_feat)
             comp_gram = gram_matrix(comp_feat)
             
-            l_style += self.l1_loss(out_gram, target_gram)
-            l_style += self.l1_loss(comp_gram, target_gram)
-            
+            out_style_loss = self.l1_loss(out_gram, target_gram)
+            comp_style_loss = self.l1_loss(comp_gram, target_gram)
+            l_style += (out_style_loss + comp_style_loss)
+            print(f"Layer {i+1} - Out Style Loss: {out_style_loss.item():.6f}, Comp Style Loss: {comp_style_loss.item():.6f}")
+        
         # Total variation loss
         l_tv = self.total_variation_loss(comp, mask)
+        print(f"\nTotal Variation Loss: {l_tv.item():.6f}")
         
-        # Weighted total loss
+        # Final weighted loss
         loss = (self.l1_weight * l_valid + 
                 self.hole_weight * l_hole + 
                 self.perceptual_weight * l_perceptual + 
                 self.style_weight * l_style + 
                 self.tv_weight * l_tv)
         
-        # Return individual losses for logging
+        # Compile loss dict
         loss_dict = {
             'total': loss,
             'valid': self.l1_weight * l_valid,
@@ -107,5 +134,9 @@ class PConvLoss(nn.Module):
             'style': self.style_weight * l_style,
             'tv': self.tv_weight * l_tv
         }
+        
+        print("\n=== Final Loss Values ===")
+        for key, value in loss_dict.items():
+            print(f"{key.capitalize()}: {value.item():.6f}")
         
         return loss, loss_dict
