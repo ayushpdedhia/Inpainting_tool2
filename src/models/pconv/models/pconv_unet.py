@@ -162,15 +162,39 @@ class PConvUNet(nn.Module):
 
             # Handler for each decoder level
             def decoder_level(level, enc_feat, enc_mask, prev_feat, prev_mask, dec_block):
+                """
+                Enhanced decoder level with better feature handling for inpainting regions
+                """
+
+                    # Add edge awareness
+                edge_mask = F.max_pool2d(1 - enc_mask, 3, stride=1, padding=1)
+                boundary_regions = edge_mask - (1 - enc_mask)
+
+                # Enhance features near boundaries
+                enc_feat = enc_feat * (1 + boundary_regions)
+                
                 # Upsample previous features and mask
                 up_feat = self.upsample(prev_feat, shape=enc_feat.shape[2:])
                 up_mask = self.upsample(prev_mask, shape=enc_feat.shape[2:])
                 
-                # Combine masks - take maximum value to preserve hole information
-                cat_mask = torch.max(up_mask, enc_mask)  # Changed from mean to max
+                # Combine masks using max to preserve hole information
+                cat_mask = torch.max(up_mask, enc_mask)
                 
-                # Concatenate features for skip connection
-                cat_feat = torch.cat([up_feat, enc_feat], dim=1)
+                # Adaptive feature weighting
+                up_weight = up_mask / (torch.sum(up_mask) + 1e-8)
+                enc_weight = enc_mask / (torch.sum(enc_mask) + 1e-8)
+                
+                # Apply weights with attention to hole regions
+                weighted_up = up_feat * (up_weight + (1 - cat_mask))
+                weighted_enc = enc_feat * (enc_weight + (1 - cat_mask))
+                
+                # Concatenate features with balanced weighting
+                cat_feat = torch.cat([weighted_up, weighted_enc], dim=1)
+                
+                # Apply additional attention to inpainting regions
+                hole_mask = 1 - cat_mask
+                attention = F.sigmoid(hole_mask * 5)  # Stronger focus on holes
+                cat_feat = cat_feat * (1 + attention)
                 
                 # Apply decoder block
                 dec_feat, dec_mask = dec_block(cat_feat, cat_mask)
@@ -188,7 +212,7 @@ class PConvUNet(nn.Module):
             dec2, dm2 = decoder_level(2, enc1, m1, dec3, dm3, self.dec2)
             dec1, dm1 = decoder_level(1, x, mask, dec2, dm2, self.dec1)
 
-            # Final output
+           # Enhanced final composition with gradual transition
             output = self.final(torch.cat([dec1, x], 1))
             output = torch.clamp(output, 0.0, 1.0)
 
@@ -196,10 +220,11 @@ class PConvUNet(nn.Module):
             print(f"Generated output range: [{output.min():.3f}, {output.max():.3f}]")
             print(f"Final mask unique values: {torch.unique(mask).cpu().numpy()}")
 
-            # Final composition: use mask directly (1=keep original, 0=use generated)
-            # Final composition: use smooth blending
             alpha = F.sigmoid(mask * 5)  # Smoother transition
-            final_output = x * alpha + output * (1 - alpha)
+            edge_mask = F.max_pool2d(1 - mask, 3, stride=1, padding=1)
+            transition_mask = edge_mask - (1 - mask)
+            final_output = (x * alpha + output * (1 - alpha)) * (1 - transition_mask) + \
+                        output * transition_mask
 
             print(f"Composition stats:")
             print(f"Overall range: [{final_output.min():.3f}, {final_output.max():.3f}]")

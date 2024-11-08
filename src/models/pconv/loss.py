@@ -12,10 +12,10 @@ class PConvLoss(nn.Module):
     Partial Convolution Loss Module combining both implementations
     """
     def __init__(self, 
-                 l1_weight=1.0,
+                 l1_weight=6.0, # Increase from 1.0
                  hole_weight=6.0,
                  perceptual_weight=0.05,
-                 style_weight=5.0,  # Reduce from 60.0 to 5.0
+                 style_weight=5.0,  # Reduce from 60.0 to 5.0 
                  tv_weight=0.1,
                  feat_num=4,
                  device="cuda"):
@@ -66,15 +66,22 @@ class PConvLoss(nn.Module):
         print(f"Target: {target.shape}, Range: {target.min():.3f} to {target.max():.3f}")
         print(f"Mask: {mask.shape}, Range: {mask.min():.3f} to {mask.max():.3f}")
 
-        # Valid area and hole losses
-        l_valid = torch.mean(torch.abs(mask * (output - target)))
+        # Add edge awareness to loss computation
+        edge_mask = F.max_pool2d(1 - mask, 3, stride=1, padding=1)
+        boundary_regions = edge_mask - (1 - mask)
+
+        # Modify valid and hole losses to focus more on boundaries
+        l_valid = torch.mean(torch.abs(mask * (output - target))) + \
+                2.0 * torch.mean(torch.abs(boundary_regions * (output - target)))
+        
         l_hole = torch.mean(torch.abs((1 - mask) * (output - target)))
         print(f"\nInitial Losses:")
         print(f"Valid Loss: {l_valid.item():.6f}")
         print(f"Hole Loss: {l_hole.item():.6f}")
         
-        # Composite output
-        comp = output * (1 - mask) + target * mask
+        # Modify composition to use smooth transition
+        alpha = F.sigmoid(mask * 5)  # Smoother transition
+        comp = output * (1 - alpha) + target * alpha
         print(f"\nComposite Output:")
         print(f"Shape: {comp.shape}, Range: {comp.min():.3f} to {comp.max():.3f}")
         

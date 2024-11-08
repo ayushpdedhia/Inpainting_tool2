@@ -90,9 +90,9 @@ To address this, you can tell Streamlit not to hash this argument by adding a le
 
         def initialize_model(_self, ...): ... 
 
-I want you to solve the error
-Now I want you to know the following things before solving the error 
-I feel the following context will help you solve the error much faster and in a efficient way 
+I want you to answer some of my questions 
+Now I want you to know the following things before asnwering my question
+I feel the following context will help you answer the question much faster and in a efficient way 
 
 
 Context about the connection of the codebase 
@@ -102,6 +102,7 @@ D:\Inpainting_tool2\src\interface\components\canvas_handler.py
 D:\Inpainting_tool2\src\interface\components\ui_components.py 
 D:\Inpainting_tool2\src\utils\image_processor.py 
 D:\Inpainting_tool2\src\core\model_manager.py 
+D:\Inpainting_tool2\src\utils\metrics_evaluator.py
 
 canvas_handler.py is connected to 
 D:\Inpainting_tool2\src\utils\mask_generator.py 
@@ -212,3 +213,84 @@ always remember that whenever i give a problem or error tell me which files do y
 
 I will give you files and then you must give me the changes required 
 
+---------------------------------------------xx--------------------------------------------------------------------
+I am providing you the output of the pasted content please read it very and identify all the problems that we are facing
+
+I am also providing you the images of input and output
+
+By looking at the output of print statements , do you really think that inpainting is happening to the mask ? if yes then please provide me the proof from the output
+
+is the model really  inpainting or are we running in circles?
+
+are we getting closer to the solution? if you need to change more code then tell the files which u need i will provide them to you
+
+you identify all the errors 
+Then i will provide you all the files in the pipeline 
+ENTIRE PIPELINE:
+When i run app.py , D:\Inpainting_tool2\src\interface\app.py 
+it is connected to 
+D:\Inpainting_tool2\src\interface\components\canvas_handler.py 
+D:\Inpainting_tool2\src\interface\components\ui_components.py 
+D:\Inpainting_tool2\src\utils\image_processor.py 
+D:\Inpainting_tool2\src\core\model_manager.py 
+D:\Inpainting_tool2\src\utils\metrics_evaluator.py
+
+canvas_handler.py is connected to 
+D:\Inpainting_tool2\src\utils\mask_generator.py 
+
+Now model_manager.py is connected to 
+D:\Inpainting_tool2\src\utils\weight_loader.py 
+D:\Inpainting_tool2\src\utils\data_loader.py 
+D:\Inpainting_tool2\src\models\pconv\models\pconv_unet.py 
+D:\Inpainting_tool2\src\models\pconv\loss.py 
+
+data_loader.py is connected to 
+D:\Inpainting_tool2\src\utils\image_processor.py 
+D:\Inpainting_tool2\src\utils\mask_generator.py 
+
+loss.py is connected to 
+D:\Inpainting_tool2\src\models\pconv\vgg_extractor.py 
+
+pconv_unet.py is conected to 
+D:\Inpainting_tool2\src\models\pconv\layers\partialconv2d.py 
+
+I will provide you all the files , you tell me which files do you need in which order and how many files should i upload at a time 
+
+after analysing the output and all the files , provide me the solution
+-----------------------------------
+
+
+I want you to first analyze all the files first 
+I will provide you the following files in this response 
+* partialconv2d.py (The core inpainting layer)
+* pconv_unet.py (The main model architecture)
+* model_manager.py (Model handling and inference)
+
+you are just suppose to analyse them do not give me any changes to the code 
+
+in the second prompt i will give you another 3 files 
+4. image_processor.py (Pre/post processing) 5. mask_generator.py (Mask handling) 6. loss.py (Loss calculation)
+
+you are just suppose to analyse them do not give me any changes to the code 
+
+In the third prompt I will again give you the same output of vs code 
+then you must analyse the output , all the six files and then provide me all the changes you want me to make 
+
+Suppose you tell me to make changes in 4 different files 
+then again i will upload those one by one and you are supposed to apply those changes in the entire file and then give me the entire code again 
+
+understood??
+
+-----------------------------------
+
+Now provide me the where should i make changes in all the files 
+
+after making those changes 
+
+I will upload those files with the changes (at a time I will upload 2) 
+
+you are supposed to check those entire files and tell me if more changes are to be made with respect to changes suggested before 
+
+be very specific with the changes you provide me 
+
+give me the reason why are you making this change and which error or problem is it solving 

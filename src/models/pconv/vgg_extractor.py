@@ -59,15 +59,17 @@ class VGG16FeatureExtractor(nn.Module):
     @staticmethod
     def normalize_batch(batch, div_factor=255.0):
         """Normalize batch for VGG processing"""
-        # Need to handle our model's output range properly
+        # First handle model's output range to [0,1]
         if batch.min() < 0 or batch.max() > 1.0:
-            batch = (batch + 2.5) / 5.0  # Normalize to [0,1] range
-
-        # Remove standardization step
-        # Now apply ImageNet normalization
+            min_val = batch.min()
+            max_val = batch.max()
+            # Scale to [0,1] range considering the actual min/max values
+            batch = torch.clamp((batch + 2.5) / 5.0, 0.0, 1.0)
+        
+        # Apply ImageNet normalization
         mean = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(batch.device)
         std = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(batch.device)
-
+        
         return (batch - mean) / std
 
     def forward(self, x):

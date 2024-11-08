@@ -103,7 +103,7 @@ class PartialConv2d(nn.Conv2d):
                                           dilation=self.dilation)
 
                 # Update mask ratio for proper scaling
-                self.mask_ratio = self.slide_winsize / (self.update_mask + 1e-6)
+                self.mask_ratio = self.slide_winsize / (self.update_mask + 1e-8)
                 self.update_mask = torch.clamp(self.update_mask, 0, 1)
                 self.mask_ratio = torch.mul(self.mask_ratio, self.update_mask)
 
@@ -117,19 +117,27 @@ class PartialConv2d(nn.Conv2d):
             masked_input = torch.mul(input, mask)
             raw_out = super(PartialConv2d, self).forward(masked_input)
 
-            # Compute output features
+            # Enhanced feature computation
             if self.bias is not None:
                 bias_view = self.bias.view(1, self.out_channels, 1, 1)
-                # Process valid regions
-                feature_output = torch.mul(raw_out - bias_view, self.mask_ratio) + bias_view
-                # Process hole regions
-                hole_output = torch.mul(raw_out - bias_view, 1 - self.mask_ratio) + bias_view
-                # Combine based on update mask
-                output = feature_output * self.update_mask + hole_output * (1 - self.update_mask)
+                # Compute features
+                hole_features = raw_out * self.mask_ratio  # Apply mask ratio to all features
+                valid_features = torch.mul(raw_out - bias_view, self.mask_ratio) + bias_view
+                
+                # Use torch.where for cleaner feature selection
+                output = torch.where(
+                    self.update_mask > 0.5,  # Threshold for valid regions
+                    valid_features,  # Use valid features where mask is 1
+                    hole_features  # Use hole features where mask is 0
+                )
             else:
-                feature_output = torch.mul(raw_out, self.mask_ratio)
-                hole_output = torch.mul(raw_out, 1 - self.mask_ratio)
-                output = feature_output * self.update_mask + hole_output * (1 - self.update_mask)
+                # Simplified unbiased case
+                output = raw_out * self.mask_ratio  # Apply mask ratio uniformly
+
+            # Add gradual transition for boundary regions
+            edge_mask = F.max_pool2d(1 - self.update_mask, 3, stride=1, padding=1)
+            boundary_mask = edge_mask - (1 - self.update_mask)
+            output = output * (1 - boundary_mask) + raw_out * boundary_mask
 
             # Debug output stats
             print("\n=== Layer Output Stats ===")
